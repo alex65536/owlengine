@@ -7,7 +7,7 @@ pub trait Sink<E: Error> {
 
 pub struct Adapt<'a, E: Error, S: Sink<E>>(&'a mut S, PhantomData<E>);
 
-pub fn adapt<'a, E: Error, S: Sink<E>>(sink: &'a mut S) -> Adapt<'a, E, S> {
+pub fn adapt<E: Error, S: Sink<E>>(sink: &mut S) -> Adapt<'_, E, S> {
     Adapt(sink, PhantomData)
 }
 
@@ -108,6 +108,40 @@ impl<E: Error, F: FnMut(E)> Sink<E> for FromFn<E, F> {
     }
 }
 
+pub trait OptionExt {
+    fn or_warn_with<E: Error>(self, error: E, warn: &mut impl Sink<E>) -> Self;
+}
+
+pub trait ResultExt<E: Error> {
+    fn or_warn<F: From<E> + Error>(self, warn: &mut impl Sink<F>) -> Self;
+    fn or_warn_map<F: Error>(self, func: impl FnOnce(E) -> F, warn: &mut impl Sink<F>) -> Self;
+}
+
+impl<T> OptionExt for Option<T> {
+    #[inline]
+    fn or_warn_with<E: Error>(self, error: E, warn: &mut impl Sink<E>) -> Self {
+        if self.is_none() {
+            warn.warn(error);
+        }
+        self
+    }
+}
+
+impl<T, E: Error + Clone> ResultExt<E> for Result<T, E> {
+    #[inline]
+    fn or_warn<F: From<E> + Error>(self, warn: &mut impl Sink<F>) -> Self {
+        self.or_warn_map(From::from, warn)
+    }
+
+    #[inline]
+    fn or_warn_map<F: Error>(self, func: impl FnOnce(E) -> F, warn: &mut impl Sink<F>) -> Self {
+        if let Err(e) = &self {
+            warn.warn(func(e.clone()));
+        }
+        self
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -128,9 +162,9 @@ mod tests {
         if n == 0 {
             return;
         }
-        recursive(n-1, warn);
-        warn.warn(ErrFirst {value: n});
-        recursive(n-1, warn);
+        recursive(n - 1, warn);
+        warn.warn(ErrFirst { value: n });
+        recursive(n - 1, warn);
     }
 
     #[test]
@@ -138,24 +172,24 @@ mod tests {
         let mut sink = All::default();
         recursive(3, &mut sink);
         let res = vec![
-            ErrFirst {value: 1},
-            ErrFirst {value: 2},
-            ErrFirst {value: 1},
-            ErrFirst {value: 3},
-            ErrFirst {value: 1},
-            ErrFirst {value: 2},
-            ErrFirst {value: 1},
+            ErrFirst { value: 1 },
+            ErrFirst { value: 2 },
+            ErrFirst { value: 1 },
+            ErrFirst { value: 3 },
+            ErrFirst { value: 1 },
+            ErrFirst { value: 2 },
+            ErrFirst { value: 1 },
         ];
         assert_eq!(sink.0, res);
     }
 
     fn inner(warn: &mut impl Sink<ErrFirst>) {
-        warn.warn(ErrFirst {value: 1});
+        warn.warn(ErrFirst { value: 1 });
     }
 
     fn outer(warn: &mut impl Sink<ErrSecond>) {
         inner(&mut adapt(warn));
-        warn.warn(ErrSecond(ErrFirst {value: 2}));
+        warn.warn(ErrSecond(ErrFirst { value: 2 }));
     }
 
     #[test]
@@ -163,8 +197,8 @@ mod tests {
         let mut sink = All::default();
         outer(&mut sink);
         let res = vec![
-            ErrSecond(ErrFirst {value: 1}),
-            ErrSecond(ErrFirst {value: 2}),
+            ErrSecond(ErrFirst { value: 1 }),
+            ErrSecond(ErrFirst { value: 2 }),
         ];
         assert_eq!(sink.0, res);
     }

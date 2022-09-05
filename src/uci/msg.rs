@@ -6,13 +6,13 @@ use owlchess::RawBoard;
 
 use crate::score::BoundedRelScore;
 
-use super::str::{OptEnumValue, OptName, RegisterName, UciStr};
+use super::str::{OptEnumValue, OptName, RegisterName, UciString};
 use super::types::{Permille, TriStatus};
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum Register {
     Later,
-    Now { name: RegisterName, code: UciStr },
+    Now { name: RegisterName, code: UciString },
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -40,7 +40,7 @@ pub enum Command {
     IsReady,
     SetOption {
         name: OptName,
-        value: UciStr,
+        value: UciString,
     },
     Register(Register),
     UciNewGame,
@@ -60,8 +60,8 @@ pub enum Command {
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum Id {
-    Name(UciStr),
-    Author(UciStr),
+    Name(UciString),
+    Author(UciString),
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -80,7 +80,6 @@ pub enum Info {
     TbHits(u64),
     SbHits(u64),
     CpuLoad(Permille),
-    String(UciStr),
     Refutation(Vec<UciMove>),
     CurrLine(Vec<UciMove>),
 }
@@ -99,7 +98,7 @@ pub enum OptBody {
         vals: Vec<OptEnumValue>,
     },
     Action,
-    String(UciStr),
+    String(UciString),
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -113,7 +112,10 @@ pub enum Message {
     },
     CopyProtection(TriStatus),
     Registration(TriStatus),
-    Info(Vec<Info>),
+    Info {
+        info: Vec<Info>,
+        string: Option<UciString>,
+    },
     Option {
         name: OptName,
         body: OptBody,

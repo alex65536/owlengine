@@ -1,5 +1,7 @@
 use std::{
+    borrow::Borrow,
     cmp::Ordering,
+    convert::Infallible,
     fmt,
     hash::{Hash, Hasher},
     ops::Deref,
@@ -8,17 +10,8 @@ use std::{
 
 use thiserror::Error;
 
-macro_rules! impl_uci_str {
-    ($name:ident, $bad_tokens:expr) => {
-        impl FromStr for $name {
-            type Err = Error;
-
-            #[inline]
-            fn from_str(s: &str) -> Result<Self, Self::Err> {
-                from_str_impl(s, &[]).map(Self)
-            }
-        }
-
+macro_rules! impl_uci_str_base {
+    ($name:ident) => {
         impl fmt::Display for $name {
             #[inline]
             fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -31,7 +24,14 @@ macro_rules! impl_uci_str {
 
             #[inline]
             fn deref(&self) -> &Self::Target {
-                self.0.as_str()
+                self.as_str()
+            }
+        }
+
+        impl AsRef<str> for $name {
+            #[inline]
+            fn as_ref(&self) -> &str {
+                self.as_str()
             }
         }
 
@@ -39,6 +39,33 @@ macro_rules! impl_uci_str {
             #[inline]
             pub fn as_str(&self) -> &str {
                 self.0.as_str()
+            }
+        }
+    };
+}
+
+macro_rules! impl_uci_str {
+    ($name:ident, $bad_tokens:expr) => {
+        impl_uci_str_base! {$name}
+
+        impl FromStr for $name {
+            type Err = Error;
+
+            #[inline]
+            fn from_str(s: &str) -> Result<Self, Self::Err> {
+                from_str_impl(s, $bad_tokens).map(Self)
+            }
+        }
+
+        impl $name {
+            #[inline]
+            pub fn from_tokens(tokens: &[&UciToken]) -> Result<Self, Error> {
+                for token in tokens {
+                    if let Some(&bad_token) = $bad_tokens.iter().find(|&t| t == &token) {
+                        return Err(Error::BadToken(bad_token));
+                    }
+                }
+                Ok(Self(tokens.join(" ")))
             }
         }
     };
@@ -87,16 +114,132 @@ macro_rules! impl_case_insensitive {
     };
 }
 
+pub trait PushTokens {
+    fn push_token(&mut self, token: &UciToken);
+    fn push_str(&mut self, str: &UciString);
+
+    #[inline]
+    fn push_tokens(&mut self, tokens: &[&UciToken]) {
+        for token in tokens {
+            self.push_token(token);
+        }
+    }
+}
+
 #[derive(Debug, Clone, Error, Eq, PartialEq)]
 pub enum Error {
     #[error("string contains bad token \"{0}\"")]
     BadToken(&'static str),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub struct UciStr(String);
+#[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[repr(transparent)]
+pub struct UciToken(str);
 
-impl_uci_str! {UciStr, &[]}
+impl UciToken {
+    #[inline]
+    pub unsafe fn from_str_unchecked(s: &str) -> &UciToken {
+        &*(s as *const str as *const UciToken)
+    }
+
+    #[inline]
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl Deref for UciToken {
+    type Target = str;
+
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        self.as_str()
+    }
+}
+
+impl AsRef<str> for UciToken {
+    #[inline]
+    fn as_ref(&self) -> &str {
+        self.as_str()
+    }
+}
+
+impl Borrow<str> for &UciToken {
+    #[inline]
+    fn borrow(&self) -> &str {
+        self.as_str()
+    }
+}
+
+impl PartialEq<UciToken> for str {
+    #[inline]
+    fn eq(&self, other: &UciToken) -> bool {
+        self == other.as_str()
+    }
+}
+
+impl PartialEq<&UciToken> for str {
+    #[inline]
+    fn eq(&self, other: &&UciToken) -> bool {
+        self == other.as_str()
+    }
+}
+
+impl PartialEq<str> for UciToken {
+    #[inline]
+    fn eq(&self, other: &str) -> bool {
+        self.as_str() == other
+    }
+}
+
+impl PartialEq<&str> for UciToken {
+    #[inline]
+    fn eq(&self, other: &&str) -> bool {
+        self.as_str() == *other
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub struct UciString(String);
+
+impl_uci_str_base! {UciString}
+
+impl FromStr for UciString {
+    type Err = Infallible;
+
+    #[inline]
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self(from_str_impl(s, &[]).unwrap()))
+    }
+}
+
+impl UciString {
+    #[inline]
+    pub fn from_tokens(tokens: &[&UciToken]) -> Self {
+        Self(tokens.join(" "))
+    }
+}
+
+impl PushTokens for UciString {
+    #[inline]
+    fn push_str(&mut self, str: &UciString) {
+        if str.is_empty() {
+            return;
+        }
+        if !self.0.is_empty() {
+            self.0 += " ";
+        }
+        self.0 += &str.0;
+    }
+
+    #[inline]
+    fn push_token(&mut self, token: &UciToken) {
+        if !self.0.is_empty() {
+            self.0 += " ";
+        }
+        self.0 += token.as_str();
+    }
+}
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct RegisterName(String);
@@ -115,6 +258,7 @@ pub struct OptEnumValue(String);
 impl_uci_str! {OptEnumValue, &["var"]}
 impl_case_insensitive! {OptEnumValue}
 
+#[inline]
 fn from_str_impl(value: &str, bad_tokens: &[&'static str]) -> Result<String, Error> {
     let mut s = String::with_capacity(value.len());
     let mut first = true;
@@ -129,4 +273,10 @@ fn from_str_impl(value: &str, bad_tokens: &[&'static str]) -> Result<String, Err
         s += token;
     }
     Ok(s)
+}
+
+#[inline]
+pub fn tokenize(s: &str) -> impl Iterator<Item = &UciToken> {
+    s.split_whitespace()
+        .map(|tok| unsafe { UciToken::from_str_unchecked(tok) })
 }
