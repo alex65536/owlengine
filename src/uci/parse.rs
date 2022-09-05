@@ -1,4 +1,4 @@
-use std::{error::Error, str::FromStr};
+use std::{error::Error, num::ParseIntError, str::FromStr, time::Duration};
 
 use owlchess::{
     board::RawFenParseError,
@@ -9,7 +9,7 @@ use owlchess::{
 use thiserror::Error;
 
 use super::{
-    msg::{Command, Register},
+    msg::{Command, GoLimits, Register},
     str::{self, OptName, PushTokens, RegisterName, UciString, UciToken},
 };
 
@@ -57,6 +57,156 @@ pub enum CommandParseError {
         #[source]
         error: uci::RawParseError,
     },
+    #[error("duplicate item in \"go\": \"{0}\"")]
+    GoDuplicate(&'static str),
+    #[error("cannot parse move \"{token}\": {error}")]
+    InvalidSearchMove {
+        token: String,
+        #[source]
+        error: uci::RawParseError,
+    },
+    #[error("cannot parse integer \"{name}\" in \"go\": {error}")]
+    GoInvalidIntSub {
+        name: &'static str,
+        #[source]
+        error: ParseIntError,
+    },
+    #[error("go item \"{0}\" ignored because of conflict with other items")]
+    GoConflict(&'static str),
+    #[error("no useful limits specified, considering \"go infinite\"")]
+    GoNoLimits,
+}
+
+fn parse_go(tokens: &mut &[&UciToken], warn: &mut impl Sink<CommandParseError>) -> Command {
+    let mut searchmoves = None;
+    let mut ponder = None;
+    let mut infinite = None;
+    let mut wtime = None;
+    let mut btime = None;
+    let mut winc = None;
+    let mut binc = None;
+    let mut movestogo = None;
+    let mut mate = None;
+    let mut depth = None;
+    let mut nodes = None;
+    let mut movetime = None;
+
+    while let Some(item) = next_item(tokens).map(UciToken::as_str) {
+        macro_rules! parse_int {
+            ($ident:ident) => {{
+                if $ident.is_some() {
+                    warn.warn(CommandParseError::GoDuplicate(stringify!($ident)));
+                }
+                match item.parse() {
+                    Ok(value) => $ident = Some(value),
+                    Err(err) => warn.warn(CommandParseError::GoInvalidIntSub {
+                        name: stringify!($ident),
+                        error: err,
+                    }),
+                }
+            }};
+        }
+
+        match item {
+            "searchmoves" => {
+                if ponder.is_some() {
+                    warn.warn(CommandParseError::GoDuplicate("searchmoves"));
+                }
+                let mut moves = Vec::new();
+                while !tokens.is_empty() {
+                    let tok = tokens[0];
+                    let bytes = tok.as_bytes();
+                    // Guess whether the next token is an UCI move.
+                    if !(matches!(bytes.len(), 4 | 5)
+                        && bytes[0].is_ascii_lowercase()
+                        && bytes[1].is_ascii_digit()
+                        && bytes[2].is_ascii_lowercase()
+                        && bytes[3].is_ascii_digit())
+                    {
+                        continue;
+                    }
+                    // Heuristics passed, treat this token as an UCI move.
+                    *tokens = &tokens[1..];
+                    match tok.parse::<UciMove>() {
+                        Ok(mv) => moves.push(mv),
+                        Err(error) => warn.warn(CommandParseError::InvalidSearchMove {
+                            token: tok.to_string(),
+                            error,
+                        }),
+                    }
+                }
+                searchmoves = Some(moves);
+            }
+            "ponder" => {
+                if ponder.is_some() {
+                    warn.warn(CommandParseError::GoDuplicate("ponder"));
+                }
+                ponder = Some(());
+            }
+            "infinite" => {
+                if infinite.is_some() {
+                    warn.warn(CommandParseError::GoDuplicate("infinite"));
+                }
+                infinite = Some(());
+            }
+            "wtime" => parse_int!(wtime),
+            "btime" => parse_int!(btime),
+            "winc" => parse_int!(winc),
+            "binc" => parse_int!(binc),
+            "movestogo" => parse_int!(movestogo),
+            "mate" => parse_int!(mate),
+            "depth" => parse_int!(depth),
+            "nodes" => parse_int!(nodes),
+            "movetime" => parse_int!(movetime),
+            tok => warn.warn(CommandParseError::UnexpectedToken(tok.to_string())),
+        }
+    }
+
+    let limits = (|| {
+        if infinite.is_some() {
+            infinite = None;
+            return GoLimits::Infinite;
+        }
+        if mate.is_some() {
+            return GoLimits::Mate(mate.take().unwrap());
+        }
+        if wtime.is_some() && btime.is_some() {
+            return GoLimits::Clock {
+                wtime: Duration::from_millis(wtime.take().unwrap()),
+                btime: Duration::from_millis(btime.take().unwrap()),
+                winc: Duration::from_millis(winc.take().unwrap_or(0)),
+                binc: Duration::from_millis(binc.take().unwrap_or(0)),
+                movestogo: movestogo.take(),
+            };
+        }
+        if depth.is_some() || nodes.is_some() || movetime.is_some() {
+            return GoLimits::Limits {
+                depth: depth.take(),
+                nodes: nodes.take(),
+                movetime: movetime.take().map(Duration::from_millis),
+            };
+        }
+        warn.warn(CommandParseError::GoNoLimits);
+        return GoLimits::Infinite;
+    })();
+
+    macro_rules! verify_taken {
+        ($($item:ident),*) => {
+            $(
+                if $item.is_some() {
+                    warn.warn(CommandParseError::GoConflict(stringify!($item)));
+                }
+            )*
+        }
+    }
+
+    verify_taken!(infinite, wtime, btime, winc, binc, movestogo, mate, depth, nodes, movetime);
+
+    Command::Go {
+        searchmoves,
+        ponder,
+        limits,
+    }
 }
 
 impl Parse for Command {
@@ -154,7 +304,7 @@ impl Parse for Command {
                         .ok()?;
                     return Some(Command::Position { startpos, moves });
                 }
-                "go" => todo!(),
+                "go" => return Some(parse_go(tokens, warn)),
                 "stop" => return Some(Command::Stop),
                 "ponderhit" => return Some(Command::PonderHit),
                 "quit" => return Some(Command::Quit),
