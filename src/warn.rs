@@ -124,13 +124,13 @@ mod tests {
     #[error("second: {0}")]
     struct ErrSecond(#[from] ErrFirst);
 
-    fn recursive(n: usize, sink: &mut impl Sink<ErrFirst>) {
+    fn recursive(n: usize, warn: &mut impl Sink<ErrFirst>) {
         if n == 0 {
             return;
         }
-        recursive(n-1, sink);
-        sink.warn(ErrFirst {value: n});
-        recursive(n-1, sink);
+        recursive(n-1, warn);
+        warn.warn(ErrFirst {value: n});
+        recursive(n-1, warn);
     }
 
     #[test]
@@ -149,13 +149,13 @@ mod tests {
         assert_eq!(sink.0, res);
     }
 
-    fn inner(sink: &mut impl Sink<ErrFirst>) {
-        sink.warn(ErrFirst {value: 1});
+    fn inner(warn: &mut impl Sink<ErrFirst>) {
+        warn.warn(ErrFirst {value: 1});
     }
 
-    fn outer(sink: &mut impl Sink<ErrSecond>) {
-        inner(&mut adapt(sink));
-        sink.warn(ErrSecond(ErrFirst {value: 2}));
+    fn outer(warn: &mut impl Sink<ErrSecond>) {
+        inner(&mut adapt(warn));
+        warn.warn(ErrSecond(ErrFirst {value: 2}));
     }
 
     #[test]
