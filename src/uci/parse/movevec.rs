@@ -3,9 +3,9 @@ use super::prelude::*;
 #[derive(Clone, Debug, Error, Eq, PartialEq)]
 #[error("cannot parse move #{}: {}", pos + 1, error)]
 pub struct Error {
-    pos: usize,
+    pub pos: usize,
     #[source]
-    error: uci::RawParseError,
+    pub error: uci::RawParseError,
 }
 
 fn looks_like_move(tok: &UciToken) -> bool {
