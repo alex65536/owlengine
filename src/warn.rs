@@ -5,11 +5,31 @@ pub trait Sink<E: Error> {
     fn warn(&mut self, error: E);
 }
 
-pub struct Adapt<'a, E: Error, S: Sink<E>>(&'a mut S, PhantomData<E>);
+pub struct Adapt<'a, E, S>(&'a mut S, PhantomData<E>);
 
-pub fn adapt<E: Error, S: Sink<E>>(sink: &mut S) -> Adapt<'_, E, S> {
-    Adapt(sink, PhantomData)
+pub struct AdaptMap<'a, D, E, F, S>(&'a mut S, F, PhantomData<D>, PhantomData<E>);
+
+pub trait SinkExt<E: Error>: Sink<E> {
+    #[inline]
+    fn adapt(&mut self) -> Adapt<'_, E, Self>
+    where
+        Self: Sized,
+    {
+        Adapt(self, PhantomData)
+    }
+
+    #[inline]
+    fn adapt_map<D, F>(&mut self, func: F) -> AdaptMap<'_, D, E, F, Self>
+    where
+        Self: Sized,
+        D: Error,
+        F: FnMut(D) -> E,
+    {
+        AdaptMap(self, func, PhantomData, PhantomData)
+    }
 }
+
+impl<E: Error, S: Sink<E>> SinkExt<E> for S {}
 
 impl<'a, E, F, S> Sink<E> for Adapt<'a, F, S>
 where
@@ -20,6 +40,19 @@ where
     #[inline]
     fn warn(&mut self, error: E) {
         self.0.warn(F::from(error))
+    }
+}
+
+impl<'a, D, E, F, S> Sink<D> for AdaptMap<'a, D, E, F, S>
+where
+    D: Error,
+    E: Error,
+    F: FnMut(D) -> E,
+    S: Sink<E>,
+{
+    #[inline]
+    fn warn(&mut self, error: D) {
+        self.0.warn(self.1(error))
     }
 }
 
@@ -188,7 +221,7 @@ mod tests {
     }
 
     fn outer(warn: &mut impl Sink<ErrSecond>) {
-        inner(&mut adapt(warn));
+        inner(&mut warn.adapt());
         warn.warn(ErrSecond(ErrFirst { value: 2 }));
     }
 

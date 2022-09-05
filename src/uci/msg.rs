@@ -6,7 +6,7 @@ use owlchess::RawBoard;
 
 use crate::score::BoundedRelScore;
 
-use super::str::{OptEnumValue, OptName, RegisterName, UciString};
+use super::str::{OptComboVar, OptName, RegisterName, UciString};
 use super::types::{Permille, TriStatus};
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -40,7 +40,7 @@ pub enum Command {
     IsReady,
     SetOption {
         name: OptName,
-        value: UciString,
+        value: Option<UciString>,
     },
     Register(Register),
     UciNewGame,
@@ -73,31 +73,30 @@ pub enum Info {
     Pv(Vec<UciMove>),
     MultiPv(u32),
     Score(BoundedRelScore),
-    CurMove(UciMove),
-    CurMoveNumber(u32),
+    CurrMove(UciMove),
+    CurrMoveNumber(u32),
     HashFull(Permille),
     Nps(u64),
     TbHits(u64),
     SbHits(u64),
     CpuLoad(Permille),
     Refutation(Vec<UciMove>),
-    CurrLine(Vec<UciMove>),
+    CurrLine { cpu_num: u32, moves: Vec<UciMove> },
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum OptBody {
-    Bool(bool),
-    Int {
+    Check(bool),
+    Spin {
         default: i64,
         min: i64,
         max: i64,
-        var: i64,
     },
-    Enum {
-        default: OptEnumValue,
-        vals: Vec<OptEnumValue>,
+    Combo {
+        default: OptComboVar,
+        vars: Vec<OptComboVar>,
     },
-    Action,
+    Button,
     String(UciString),
 }
 

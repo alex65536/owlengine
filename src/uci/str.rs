@@ -253,10 +253,10 @@ impl_uci_str! {OptName, &["type", "value"]}
 impl_case_insensitive! {OptName}
 
 #[derive(Debug, Clone)]
-pub struct OptEnumValue(String);
+pub struct OptComboVar(String);
 
-impl_uci_str! {OptEnumValue, &["var"]}
-impl_case_insensitive! {OptEnumValue}
+impl_uci_str! {OptComboVar, &["var"]}
+impl_case_insensitive! {OptComboVar}
 
 #[inline]
 fn from_str_impl(value: &str, bad_tokens: &[&'static str]) -> Result<String, Error> {
