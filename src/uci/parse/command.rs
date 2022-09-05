@@ -1,20 +1,10 @@
-use std::{num::ParseIntError, time::Duration};
-
-use owlchess::{
-    board::{RawBoard, RawFenParseError},
-    moves::uci,
-};
-
-use thiserror::Error;
-
-use crate::warn::{ResultExt, Sink, SinkExt};
-
-use super::{movevec, tok, EolError};
+use owlchess::board::{RawBoard, RawFenParseError};
 
 use super::super::{
     msg::{Command, GoLimits, Register},
-    str::{self, OptName, RegisterName, UciString, UciToken},
+    str::{OptName, RegisterName},
 };
+use super::{movevec, prelude::*, tok};
 
 #[derive(Clone, Debug, Error, Eq, PartialEq)]
 pub enum Error {
@@ -27,11 +17,11 @@ pub enum Error {
     #[error("no \"name\" in \"setoption\"")]
     SetOptionNoName,
     #[error("cannot convert option name: {0}")]
-    SetOptionBadName(#[source] str::Error),
+    SetOptionBadName(#[source] StrError),
     #[error("no \"code\" in \"register\"")]
     RegisterNoCode,
     #[error("cannot convert register name: {0}")]
-    RegisterBadName(#[source] str::Error),
+    RegisterBadName(#[source] StrError),
     #[error("no \"moves\" in position")]
     PositionNoMoves,
     #[error("no position specified, assuming \"startpos\"")]

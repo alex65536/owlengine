@@ -7,6 +7,15 @@ mod score;
 mod tok;
 mod tristatus;
 
+mod prelude {
+    pub use super::super::str::{Error as StrError, UciString, UciToken};
+    pub use super::EolError;
+    pub use crate::warn::{OptionExt, ResultExt, Sink, SinkExt};
+    pub use owlchess::moves::{uci, UciMove};
+    pub use std::{num::ParseIntError, time::Duration};
+    pub use thiserror::Error;
+}
+
 use std::error::Error;
 
 use thiserror::Error;

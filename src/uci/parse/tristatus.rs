@@ -1,10 +1,5 @@
-use thiserror::Error;
-
-use crate::warn::Sink;
-
-use super::{tok, EolError};
-
-use super::super::{str::UciToken, types::TriStatus};
+use super::super::types::TriStatus;
+use super::{prelude::*, tok};
 
 #[derive(Clone, Debug, Error, Eq, PartialEq)]
 pub enum Error {

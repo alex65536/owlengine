@@ -1,15 +1,8 @@
-use thiserror::Error;
-
-use owlchess::moves::{uci, UciMove};
-
-use crate::warn::{ResultExt, Sink, SinkExt};
-
-use super::{info, optbody, tok, tristatus, EolError};
-
 use super::super::{
     msg::{Id, Message},
-    str::{self, OptName, UciString, UciToken},
+    str::OptName,
 };
+use super::{info, optbody, prelude::*, tok, tristatus};
 
 #[derive(Clone, Debug, Error, Eq, PartialEq)]
 pub enum Error {
@@ -38,7 +31,7 @@ pub enum Error {
     #[error("no \"type\" in \"setoption\"")]
     OptionNoType,
     #[error("cannot convert option name: {0}")]
-    OptionBadName(#[source] str::Error),
+    OptionBadName(#[source] StrError),
     #[error("invalid option body: {0}")]
     OptionBadBody(#[from] optbody::Error),
 }

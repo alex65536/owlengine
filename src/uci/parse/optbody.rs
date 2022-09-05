@@ -1,15 +1,7 @@
-use std::{mem, num::ParseIntError};
+use std::mem;
 
-use thiserror::Error;
-
-use crate::warn::{OptionExt, ResultExt, Sink};
-
-use super::{tok, EolError};
-
-use super::super::{
-    msg::OptBody,
-    str::{self, OptComboVar, UciString, UciToken},
-};
+use super::super::{msg::OptBody, str::OptComboVar};
+use super::{prelude::*, tok};
 
 #[derive(Clone, Debug, Error, Eq, PartialEq)]
 pub enum Error {
@@ -28,12 +20,12 @@ pub enum Error {
     #[error("cannot parse integer: {0}")]
     BadInteger(#[from] ParseIntError),
     #[error("cannot convert string to default combo variant: {0}")]
-    BadComboDefaultVar(#[source] str::Error),
+    BadComboDefaultVar(#[source] StrError),
     #[error("cannot convert string to combo variant {}: {}", pos + 1, error)]
     BadComboVar {
         pos: usize,
         #[source]
-        error: str::Error,
+        error: StrError,
     },
 }
 

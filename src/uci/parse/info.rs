@@ -1,14 +1,5 @@
-use std::{num::ParseIntError, time::Duration};
-
-use thiserror::Error;
-
-use owlchess::moves::uci;
-
-use crate::warn::{Sink, SinkExt};
-
-use super::{movevec, score, tok, EolError};
-
-use super::super::{msg::Info, str::UciToken, types::Permille};
+use super::super::{msg::Info, types::Permille};
+use super::{movevec, prelude::*, score, tok};
 
 #[derive(Clone, Debug, Error, Eq, PartialEq)]
 pub enum Error {

@@ -1,10 +1,4 @@
-use owlchess::moves::{uci, UciMove};
-
-use super::super::str::UciToken;
-
-use crate::warn::Sink;
-
-use thiserror::Error;
+use super::prelude::*;
 
 #[derive(Clone, Debug, Error, Eq, PartialEq)]
 #[error("cannot parse move #{}: {}", pos + 1, error)]

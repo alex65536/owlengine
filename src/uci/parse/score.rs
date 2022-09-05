@@ -1,14 +1,5 @@
-use std::num::ParseIntError;
-
-use thiserror::Error;
-
-use crate::warn::{OptionExt, Sink};
-
+use super::{prelude::*, tok};
 use crate::score::{Bound, BoundedRelScore, RelScore};
-
-use super::{tok, EolError};
-
-use super::super::str::UciToken;
 
 #[derive(Clone, Debug, Error, Eq, PartialEq)]
 pub enum Error {

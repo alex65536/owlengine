@@ -1,10 +1,9 @@
 use std::{error::Error, str::FromStr};
 
-use super::EolError;
+use crate::warn::{OptionExt, ResultExt, Sink};
 
 use super::super::str::UciToken;
-
-use crate::warn::{OptionExt, ResultExt, Sink};
+use super::EolError;
 
 pub fn try_split<'a, 'b>(
     src: &'a [&'b UciToken],
