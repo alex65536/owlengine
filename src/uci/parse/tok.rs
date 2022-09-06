@@ -2,7 +2,7 @@ use std::{error::Error, str::FromStr};
 
 use crate::warn::{OptionExt, ResultExt, Sink};
 
-use super::super::str::UciToken;
+use super::super::str::{PushTokens, UciToken};
 use super::EolError;
 
 pub fn try_split<'a, 'b>(
@@ -77,3 +77,11 @@ pub fn expect<E: From<EolError> + Error>(
     }
     Some(())
 }
+
+pub trait PushTokensExt: PushTokens {
+    fn do_tok(&mut self, token: &str) {
+        self.push_token(unsafe { UciToken::new_unchecked(token) })
+    }
+}
+
+impl<T: PushTokens> PushTokensExt for T {}

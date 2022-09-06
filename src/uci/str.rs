@@ -19,12 +19,10 @@ macro_rules! impl_uci_str_base {
             }
         }
 
-        impl Deref for $name {
-            type Target = str;
-
+        impl From<$name> for String {
             #[inline]
-            fn deref(&self) -> &Self::Target {
-                self.as_str()
+            fn from(val: $name) -> Self {
+                val.0
             }
         }
 
@@ -35,10 +33,27 @@ macro_rules! impl_uci_str_base {
             }
         }
 
+        impl AsRef<UciStr> for $name {
+            #[inline]
+            fn as_ref(&self) -> &UciStr {
+                self.as_uci_str()
+            }
+        }
+
         impl $name {
+            #[inline]
+            pub fn new() -> Self {
+                Self::default()
+            }
+
             #[inline]
             pub fn as_str(&self) -> &str {
                 self.0.as_str()
+            }
+
+            #[inline]
+            pub fn as_uci_str(&self) -> &UciStr {
+                unsafe { &*(self.as_str() as *const str as *const UciStr) }
             }
         }
     };
@@ -73,6 +88,15 @@ macro_rules! impl_uci_str {
 
 macro_rules! impl_case_insensitive {
     ($name:ident) => {
+        impl Deref for $name {
+            type Target = str;
+
+            #[inline]
+            fn deref(&self) -> &Self::Target {
+                self.as_str()
+            }
+        }
+
         impl $name {
             #[inline]
             fn iter_low(&self) -> impl Iterator<Item = char> + '_ {
@@ -114,9 +138,29 @@ macro_rules! impl_case_insensitive {
     };
 }
 
+macro_rules! impl_case_sensitive {
+    ($name:ident) => {
+        impl Deref for $name {
+            type Target = UciStr;
+
+            #[inline]
+            fn deref(&self) -> &Self::Target {
+                self.as_uci_str()
+            }
+        }
+
+        impl Borrow<UciStr> for $name {
+            #[inline]
+            fn borrow(&self) -> &UciStr {
+                self.as_uci_str()
+            }
+        }
+    }
+}
+
 pub trait PushTokens {
     fn push_token(&mut self, token: &UciToken);
-    fn push_str(&mut self, str: &UciString);
+    fn push_str(&mut self, str: &UciStr);
 
     #[inline]
     fn push_tokens(&mut self, tokens: &[&UciToken]) {
@@ -132,14 +176,33 @@ pub enum Error {
     BadToken(&'static str),
 }
 
+#[derive(Debug, Clone, Error, Eq, PartialEq)]
+pub enum TokenError {
+    #[error("token is empty")]
+    Empty,
+    #[error("token contains whitespace")]
+    Whitespace,
+}
+
 #[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[repr(transparent)]
 pub struct UciToken(str);
 
 impl UciToken {
     #[inline]
-    pub unsafe fn from_str_unchecked(s: &str) -> &UciToken {
+    pub unsafe fn new_unchecked(s: &str) -> &UciToken {
         &*(s as *const str as *const UciToken)
+    }
+
+    #[inline]
+    pub fn new(s: &str) -> Result<&UciToken, TokenError> {
+        if s.is_empty() {
+            return Err(TokenError::Empty);
+        }
+        if s.chars().any(|c| c.is_whitespace()) {
+            return Err(TokenError::Whitespace);
+        }
+        Ok(unsafe { Self::new_unchecked(s) })
     }
 
     #[inline]
@@ -199,10 +262,40 @@ impl PartialEq<&str> for UciToken {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[repr(transparent)]
+pub struct UciStr(str);
+
+impl Deref for UciStr {
+    type Target = str;
+
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        self.as_str()
+    }
+}
+
+impl UciStr {
+    #[inline]
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl ToOwned for UciStr {
+    type Owned = UciString;
+
+    #[inline]
+    fn to_owned(&self) -> Self::Owned {
+        UciString(self.0.to_owned())
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Default)]
 pub struct UciString(String);
 
 impl_uci_str_base! {UciString}
+impl_case_sensitive! {UciString}
 
 impl FromStr for UciString {
     type Err = Infallible;
@@ -210,6 +303,20 @@ impl FromStr for UciString {
     #[inline]
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Self(from_str_impl(s, &[]).unwrap()))
+    }
+}
+
+impl From<&str> for UciString {
+    #[inline]
+    fn from(s: &str) -> Self {
+        Self(from_str_impl(s, &[]).unwrap())
+    }
+}
+
+impl From<&String> for UciString {
+    #[inline]
+    fn from(s: &String) -> Self {
+        Self::from(s.as_str())
     }
 }
 
@@ -222,7 +329,7 @@ impl UciString {
 
 impl PushTokens for UciString {
     #[inline]
-    fn push_str(&mut self, str: &UciString) {
+    fn push_str(&mut self, str: &UciStr) {
         if str.is_empty() {
             return;
         }
@@ -241,18 +348,19 @@ impl PushTokens for UciString {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Default)]
 pub struct RegisterName(String);
 
 impl_uci_str! {RegisterName, &["code"]}
+impl_case_sensitive! {RegisterName}
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct OptName(String);
 
 impl_uci_str! {OptName, &["type", "value"]}
 impl_case_insensitive! {OptName}
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct OptComboVar(String);
 
 impl_uci_str! {OptComboVar, &["var"]}
@@ -278,5 +386,5 @@ fn from_str_impl(value: &str, bad_tokens: &[&'static str]) -> Result<String, Err
 #[inline]
 pub fn tokenize(s: &str) -> impl Iterator<Item = &UciToken> {
     s.split_whitespace()
-        .map(|tok| unsafe { UciToken::from_str_unchecked(tok) })
+        .map(|tok| unsafe { UciToken::new_unchecked(tok) })
 }

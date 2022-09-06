@@ -123,3 +123,55 @@ pub fn parse(tokens: &mut &[&UciToken], warn: &mut impl Sink<Error>) -> Option<M
     }
     result
 }
+
+pub fn fmt(src: &Message, f: &mut impl PushTokens) {
+    match src {
+        Message::Id(id) => {
+            f.do_tok("id");
+            match id {
+                Id::Name(name) => {
+                    f.do_tok("name");
+                    f.push_str(name);
+                }
+                Id::Author(author) => {
+                    f.do_tok("author");
+                    f.push_str(author);
+                }
+            }
+        }
+        Message::UciOk => f.do_tok("uciok"),
+        Message::ReadyOk => f.do_tok("readyok"),
+        Message::BestMove { bestmove, ponder } => {
+            f.do_tok("bestmove");
+            f.do_tok(&bestmove.to_string());
+            if let Some(ponder) = ponder {
+                f.do_tok("ponder");
+                f.do_tok(&ponder.to_string());
+            }
+        }
+        Message::CopyProtection(status) => {
+            f.do_tok("copyprotection");
+            tristatus::fmt(status, f);
+        }
+        Message::Registration(status) => {
+            f.do_tok("registration");
+            tristatus::fmt(status, f);
+        }
+        Message::Info { info, string } => {
+            f.do_tok("info");
+            for inf in info {
+                info::fmt(inf, f);
+            }
+            if let Some(string) = string {
+                f.do_tok("string");
+                f.push_str(string);
+            }
+        }
+        Message::Option { name, body } => {
+            f.do_tok("option");
+            f.do_tok("name");
+            f.push_str(name.as_ref());
+            optbody::fmt(body, f);
+        }
+    }
+}

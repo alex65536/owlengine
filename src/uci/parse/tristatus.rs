@@ -20,3 +20,11 @@ pub fn parse(tokens: &mut &[&UciToken], warn: &mut impl Sink<Error>) -> Option<T
         }
     }
 }
+
+pub fn fmt(src: &TriStatus, f: &mut impl PushTokens) {
+    match src {
+        TriStatus::Ok => f.do_tok("ok"),
+        TriStatus::Checking => f.do_tok("checking"),
+        TriStatus::Error => f.do_tok("error"),
+    }
+}

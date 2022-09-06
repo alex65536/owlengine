@@ -88,3 +88,36 @@ pub fn parse(tokens: &mut &[&UciToken], warn: &mut impl Sink<Error>) -> Option<O
     }
     result
 }
+
+pub fn fmt(src: &OptBody, f: &mut impl PushTokens) {
+    match src {
+        OptBody::Check(val) => {
+            f.do_tok("check");
+            f.do_tok("default");
+            f.do_tok(if *val { "true" } else { "false" });
+        }
+        OptBody::Spin { default, min, max } => {
+            f.do_tok("spin");
+            f.do_tok("default");
+            f.do_tok(&default.to_string());
+            f.do_tok("min");
+            f.do_tok(&min.to_string());
+            f.do_tok("max");
+            f.do_tok(&max.to_string());
+        }
+        OptBody::Combo { default, vars } => {
+            f.do_tok("combo");
+            f.do_tok("default");
+            f.push_str(default.as_ref());
+            for var in vars {
+                f.do_tok("var");
+                f.push_str(var.as_ref());
+            }
+        }
+        OptBody::Button => f.do_tok("button"),
+        OptBody::String(str) => {
+            f.do_tok("string");
+            f.push_str(str);
+        }
+    }
+}

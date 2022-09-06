@@ -64,3 +64,73 @@ pub fn parse(tokens: &mut &[&UciToken], warn: &mut impl Sink<Error>) -> Option<I
         }
     }
 }
+
+pub fn fmt(src: &Info, f: &mut impl PushTokens) {
+    match src {
+        Info::Depth(val) => {
+            f.do_tok("depth");
+            f.do_tok(&val.to_string());
+        }
+        Info::SelDepth(val) => {
+            f.do_tok("seldepth");
+            f.do_tok(&val.to_string());
+        }
+        Info::Time(val) => {
+            f.do_tok("time");
+            f.do_tok(&val.as_millis().to_string());
+        }
+        Info::Nodes(val) => {
+            f.do_tok("nodes");
+            f.do_tok(&val.to_string());
+        }
+        Info::Pv(moves) => {
+            f.do_tok("pv");
+            movevec::fmt(moves, f);
+        }
+        Info::MultiPv(val) => {
+            f.do_tok("multipv");
+            f.do_tok(&val.to_string());
+        }
+        Info::Score(val) => {
+            f.do_tok("score");
+            score::fmt(val, f);
+        }
+        Info::CurrMove(val) => {
+            f.do_tok("currmove");
+            f.do_tok(&val.to_string());
+        }
+        Info::CurrMoveNumber(val) => {
+            f.do_tok("currmovenumber");
+            f.do_tok(&val.to_string());
+        }
+        Info::HashFull(val) => {
+            f.do_tok("hashfull");
+            f.do_tok(&val.amount().to_string());
+        }
+        Info::Nps(val) => {
+            f.do_tok("nps");
+            f.do_tok(&val.to_string());
+        }
+        Info::TbHits(val) => {
+            f.do_tok("tbhits");
+            f.do_tok(&val.to_string());
+        }
+        Info::SbHits(val) => {
+            f.do_tok("sbhits");
+            f.do_tok(&val.to_string());
+        }
+        Info::CpuLoad(val) => {
+            f.do_tok("cpuload");
+            f.do_tok(&val.amount().to_string());
+        }
+        Info::Refutation(moves) => {
+            f.do_tok("refutation");
+            movevec::fmt(moves, f);
+        }
+        Info::CurrLine { cpu_num, moves } => {
+            f.do_tok("currline");
+            f.do_tok(&cpu_num.to_string());
+            movevec::fmt(moves, f);
+        }
+    }
+}

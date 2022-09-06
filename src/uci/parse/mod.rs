@@ -8,8 +8,8 @@ mod tok;
 mod tristatus;
 
 mod prelude {
-    pub use super::super::str::{Error as StrError, UciString, UciToken};
-    pub use super::EolError;
+    pub use super::super::str::{Error as StrError, PushTokens, UciString, UciToken};
+    pub use super::{EolError, tok::PushTokensExt};
     pub use crate::warn::{OptionExt, ResultExt, Sink, SinkExt};
     pub use owlchess::moves::{uci, UciMove};
     pub use std::{num::ParseIntError, time::Duration};
@@ -24,7 +24,7 @@ use crate::warn::Sink;
 
 use super::{
     msg::{Command, Message},
-    str::{PushTokens, UciToken},
+    str::{self, PushTokens, UciToken, UciString},
 };
 
 pub trait Parse {
@@ -33,10 +33,26 @@ pub trait Parse {
     fn parse(tokens: &mut &[&UciToken], warn: &mut impl Sink<Self::Err>) -> Option<Self>
     where
         Self: Sized;
+
+    #[inline]
+    fn parse_line(line: &str, warn: &mut impl Sink<Self::Err>) -> Option<Self>
+    where
+        Self: Sized
+    {
+        let tokens: Vec<_> = str::tokenize(line).collect();
+        Self::parse(&mut &tokens[..], warn)
+    }
 }
 
 pub trait Fmt {
     fn fmt(&self, f: &mut impl PushTokens);
+
+    #[inline]
+    fn fmt_line(&self) -> String {
+        let mut res = UciString::default();
+        self.fmt(&mut res);
+        res.into()
+    }
 }
 
 #[derive(Clone, Debug, Error, Eq, PartialEq)]
@@ -59,10 +75,22 @@ impl Parse for Command {
     }
 }
 
+impl Fmt for Command {
+    fn fmt(&self, f: &mut impl PushTokens) {
+        command::fmt(self, f)
+    }
+}
+
 impl Parse for Message {
     type Err = message::Error;
 
     fn parse(tokens: &mut &[&UciToken], warn: &mut impl Sink<Self::Err>) -> Option<Self> {
         message::parse(tokens, warn)
+    }
+}
+
+impl Fmt for Message {
+    fn fmt(&self, f: &mut impl PushTokens) {
+        message::fmt(self, f)
     }
 }

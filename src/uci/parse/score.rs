@@ -53,3 +53,29 @@ pub fn parse(tokens: &mut &[&UciToken], warn: &mut impl Sink<Error>) -> Option<B
     };
     Some(BoundedRelScore { score, bound })
 }
+
+fn fmt_unbounded(src: &RelScore, f: &mut impl PushTokens) {
+    match src {
+        RelScore::Cp(val) => {
+            f.do_tok("cp");
+            f.do_tok(&val.to_string());
+        }
+        RelScore::Mate { moves, win } => {
+            let mut moves = *moves as i64;
+            if !win {
+                moves = -moves;
+            }
+            f.do_tok("mate");
+            f.do_tok(&moves.to_string());
+        }
+    }
+}
+
+pub fn fmt(src: &BoundedRelScore, f: &mut impl PushTokens) {
+    fmt_unbounded(&src.score, f);
+    match src.bound {
+        Bound::Lower => f.do_tok("lowerbound"),
+        Bound::Upper => f.do_tok("upperbound"),
+        Bound::Exact => {}
+    }
+}
