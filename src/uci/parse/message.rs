@@ -171,6 +171,7 @@ pub fn fmt(src: &Message, f: &mut impl PushTokens) {
             f.do_tok("option");
             f.do_tok("name");
             f.push_str(name.as_ref());
+            f.do_tok("type");
             optbody::fmt(body, f);
         }
     }

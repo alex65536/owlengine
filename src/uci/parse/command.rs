@@ -22,7 +22,7 @@ pub enum Error {
     RegisterNoCode,
     #[error("cannot convert register name: {0}")]
     RegisterBadName(#[source] StrError),
-    #[error("no \"moves\" in position")]
+    #[error("no \"moves\" in \"position\"")]
     PositionNoMoves,
     #[error("no position specified, assuming \"startpos\"")]
     NoPosition,
@@ -70,12 +70,15 @@ fn parse_go(tokens: &mut &[&UciToken], warn: &mut impl Sink<Error>) -> Command {
                 if $ident.is_some() {
                     warn.warn(Error::GoDuplicate(stringify!($ident)));
                 }
-                match item.parse() {
-                    Ok(value) => $ident = Some(value),
-                    Err(err) => warn.warn(Error::GoInvalidIntSub {
+                if let Some(value) = tok::parse_map(
+                    tokens,
+                    |error| Error::GoInvalidIntSub {
                         name: stringify!($ident),
-                        error: err,
-                    }),
+                        error,
+                    },
+                    warn,
+                ) {
+                    $ident = Some(value);
                 }
             }};
         }
@@ -259,7 +262,7 @@ pub fn fmt(src: &Command, f: &mut impl PushTokens) {
         Command::Debug(val) => {
             f.do_tok("debug");
             f.do_tok(if *val { "on" } else { "off" });
-        },
+        }
         Command::IsReady => f.do_tok("isready"),
         Command::SetOption { name, value } => {
             f.do_tok("setoption");
@@ -284,6 +287,7 @@ pub fn fmt(src: &Command, f: &mut impl PushTokens) {
         }
         Command::UciNewGame => f.do_tok("ucinewgame"),
         Command::Position { startpos, moves } => {
+            f.do_tok("position");
             if startpos == &RawBoard::initial() {
                 f.do_tok("startpos");
             } else {
@@ -295,7 +299,12 @@ pub fn fmt(src: &Command, f: &mut impl PushTokens) {
                 f.do_tok(&mv.to_string());
             }
         }
-        Command::Go { searchmoves, ponder, limits } => {
+        Command::Go {
+            searchmoves,
+            ponder,
+            limits,
+        } => {
+            f.do_tok("go");
             if let Some(searchmoves) = searchmoves {
                 f.do_tok("searchmoves");
                 movevec::fmt(searchmoves, f);
@@ -305,7 +314,13 @@ pub fn fmt(src: &Command, f: &mut impl PushTokens) {
             }
             match limits {
                 GoLimits::Infinite => f.do_tok("infinite"),
-                GoLimits::Clock { wtime, btime, winc, binc, movestogo } => {
+                GoLimits::Clock {
+                    wtime,
+                    btime,
+                    winc,
+                    binc,
+                    movestogo,
+                } => {
                     f.do_tok("wtime");
                     f.do_tok(&wtime.as_millis().to_string());
                     f.do_tok("btime");
@@ -327,7 +342,11 @@ pub fn fmt(src: &Command, f: &mut impl PushTokens) {
                     f.do_tok("mate");
                     f.do_tok(&value.to_string());
                 }
-                GoLimits::Limits { depth, nodes, movetime } => {
+                GoLimits::Limits {
+                    depth,
+                    nodes,
+                    movetime,
+                } => {
                     if depth.is_none() && nodes.is_none() && movetime.is_none() {
                         f.do_tok("infinite");
                     }
@@ -345,7 +364,7 @@ pub fn fmt(src: &Command, f: &mut impl PushTokens) {
                     }
                 }
             }
-        },
+        }
         Command::Stop => f.do_tok("stop"),
         Command::PonderHit => f.do_tok("ponderhit"),
         Command::Quit => f.do_tok("quit"),

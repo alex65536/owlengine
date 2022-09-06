@@ -155,7 +155,7 @@ macro_rules! impl_case_sensitive {
                 self.as_uci_str()
             }
         }
-    }
+    };
 }
 
 pub trait PushTokens {

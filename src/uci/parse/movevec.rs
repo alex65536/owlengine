@@ -26,7 +26,7 @@ pub fn parse(
     while !tokens.is_empty() {
         let tok = tokens[0];
         if !looks_like_move(tok) {
-            continue;
+            break;
         }
         *tokens = &tokens[1..];
         match tok.parse::<UciMove>() {

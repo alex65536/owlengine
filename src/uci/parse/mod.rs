@@ -9,7 +9,7 @@ mod tristatus;
 
 mod prelude {
     pub use super::super::str::{Error as StrError, PushTokens, UciString, UciToken};
-    pub use super::{EolError, tok::PushTokensExt};
+    pub use super::{tok::PushTokensExt, EolError};
     pub use crate::warn::{OptionExt, ResultExt, Sink, SinkExt};
     pub use owlchess::moves::{uci, UciMove};
     pub use std::{num::ParseIntError, time::Duration};
@@ -24,7 +24,7 @@ use crate::warn::Sink;
 
 use super::{
     msg::{Command, Message},
-    str::{self, PushTokens, UciToken, UciString},
+    str::{self, PushTokens, UciString, UciToken},
 };
 
 pub trait Parse {
@@ -37,7 +37,7 @@ pub trait Parse {
     #[inline]
     fn parse_line(line: &str, warn: &mut impl Sink<Self::Err>) -> Option<Self>
     where
-        Self: Sized
+        Self: Sized,
     {
         let tokens: Vec<_> = str::tokenize(line).collect();
         Self::parse(&mut &tokens[..], warn)
@@ -56,7 +56,7 @@ pub trait Fmt {
 }
 
 #[derive(Clone, Debug, Error, Eq, PartialEq)]
-#[error("unexpected end of file")]
+#[error("unexpected end of line")]
 pub struct EolError;
 
 pub use command::Error as CommandError;
