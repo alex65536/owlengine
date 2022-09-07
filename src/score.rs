@@ -9,6 +9,13 @@ pub enum Bound {
     Exact,
 }
 
+impl Default for Bound {
+    #[inline]
+    fn default() -> Self {
+        Bound::Exact
+    }
+}
+
 impl Bound {
     #[inline]
     pub fn inv(self) -> Self {
@@ -31,6 +38,13 @@ impl Bound {
 pub enum RelScore {
     Cp(i32),
     Mate { moves: u32, win: bool },
+}
+
+impl Default for RelScore {
+    #[inline]
+    fn default() -> Self {
+        RelScore::Cp(0)
+    }
 }
 
 impl RelScore {
@@ -85,6 +99,13 @@ pub enum AbsScore {
     Mate { moves: u32, winner: Color },
 }
 
+impl Default for AbsScore {
+    #[inline]
+    fn default() -> Self {
+        AbsScore::Cp(0)
+    }
+}
+
 impl AbsScore {
     #[inline]
     pub fn rel_to(self, side: Color) -> RelScore {
@@ -115,7 +136,7 @@ impl Ord for AbsScore {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, Hash)]
+#[derive(Copy, Clone, Default, PartialEq, Eq, Debug, Hash)]
 pub struct BoundedRelScore {
     pub score: RelScore,
     pub bound: Bound,
@@ -139,7 +160,7 @@ impl BoundedRelScore {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, Hash)]
+#[derive(Copy, Clone, Default, PartialEq, Eq, Debug, Hash)]
 pub struct BoundedAbsScore {
     pub score: AbsScore,
     pub bound: Bound,
