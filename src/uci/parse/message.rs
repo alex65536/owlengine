@@ -72,8 +72,7 @@ pub fn parse(tokens: &mut &[&Token], warn: &mut impl Warn<Error>) -> Option<Mess
                         warn.warn(Error::UnexpectedToken(tok.to_string()));
                         return None;
                     }
-                    let ponder = tok::next_warn(tokens, warn)?;
-                    ponder.parse().or_warn_map(Error::InvalidPonder, warn)
+                    tok::parse_map(tokens, Error::InvalidPonder, warn)
                 })();
                 return Some(Message::BestMove { bestmove, ponder });
             }

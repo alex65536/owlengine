@@ -55,7 +55,6 @@ where
     T: FromStr<Err = D>,
 {
     next_warn(tokens, warn)?
-        .as_str()
         .parse()
         .or_warn_map(func, warn)
 }
