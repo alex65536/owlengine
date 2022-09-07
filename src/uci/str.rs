@@ -8,6 +8,8 @@ use std::{
     str::FromStr,
 };
 
+use super::token::Token;
+
 use thiserror::Error;
 
 macro_rules! impl_uci_str_base {
@@ -74,7 +76,7 @@ macro_rules! impl_uci_str {
 
         impl $name {
             #[inline]
-            pub fn from_tokens(tokens: &[&UciToken]) -> Result<Self, Error> {
+            pub fn from_tokens(tokens: &[&Token]) -> Result<Self, Error> {
                 for token in tokens {
                     if let Some(&bad_token) = $bad_tokens.iter().find(|&t| t == &token) {
                         return Err(Error::BadToken(bad_token));
@@ -158,108 +160,10 @@ macro_rules! impl_case_sensitive {
     };
 }
 
-pub trait PushTokens {
-    fn push_token(&mut self, token: &UciToken);
-    fn push_str(&mut self, str: &UciStr);
-
-    #[inline]
-    fn push_tokens(&mut self, tokens: &[&UciToken]) {
-        for token in tokens {
-            self.push_token(token);
-        }
-    }
-}
-
 #[derive(Debug, Clone, Error, Eq, PartialEq)]
 pub enum Error {
     #[error("string contains bad token \"{0}\"")]
     BadToken(&'static str),
-}
-
-#[derive(Debug, Clone, Error, Eq, PartialEq)]
-pub enum TokenError {
-    #[error("token is empty")]
-    Empty,
-    #[error("token contains whitespace")]
-    Whitespace,
-}
-
-#[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
-#[repr(transparent)]
-pub struct UciToken(str);
-
-impl UciToken {
-    #[inline]
-    pub unsafe fn new_unchecked(s: &str) -> &UciToken {
-        &*(s as *const str as *const UciToken)
-    }
-
-    #[inline]
-    pub fn new(s: &str) -> Result<&UciToken, TokenError> {
-        if s.is_empty() {
-            return Err(TokenError::Empty);
-        }
-        if s.chars().any(|c| c.is_whitespace()) {
-            return Err(TokenError::Whitespace);
-        }
-        Ok(unsafe { Self::new_unchecked(s) })
-    }
-
-    #[inline]
-    pub fn as_str(&self) -> &str {
-        &self.0
-    }
-}
-
-impl Deref for UciToken {
-    type Target = str;
-
-    #[inline]
-    fn deref(&self) -> &Self::Target {
-        self.as_str()
-    }
-}
-
-impl AsRef<str> for UciToken {
-    #[inline]
-    fn as_ref(&self) -> &str {
-        self.as_str()
-    }
-}
-
-impl Borrow<str> for &UciToken {
-    #[inline]
-    fn borrow(&self) -> &str {
-        self.as_str()
-    }
-}
-
-impl PartialEq<UciToken> for str {
-    #[inline]
-    fn eq(&self, other: &UciToken) -> bool {
-        self == other.as_str()
-    }
-}
-
-impl PartialEq<&UciToken> for str {
-    #[inline]
-    fn eq(&self, other: &&UciToken) -> bool {
-        self == other.as_str()
-    }
-}
-
-impl PartialEq<str> for UciToken {
-    #[inline]
-    fn eq(&self, other: &str) -> bool {
-        self.as_str() == other
-    }
-}
-
-impl PartialEq<&str> for UciToken {
-    #[inline]
-    fn eq(&self, other: &&str) -> bool {
-        self.as_str() == *other
-    }
 }
 
 #[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
@@ -291,8 +195,9 @@ impl ToOwned for UciStr {
     }
 }
 
+// FIXME : pub(super) is a temporary hack
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Default)]
-pub struct UciString(String);
+pub struct UciString(pub(super) String);
 
 impl_uci_str_base! {UciString}
 impl_case_sensitive! {UciString}
@@ -322,29 +227,8 @@ impl From<&String> for UciString {
 
 impl UciString {
     #[inline]
-    pub fn from_tokens(tokens: &[&UciToken]) -> Self {
+    pub fn from_tokens(tokens: &[&Token]) -> Self {
         Self(tokens.join(" "))
-    }
-}
-
-impl PushTokens for UciString {
-    #[inline]
-    fn push_str(&mut self, str: &UciStr) {
-        if str.is_empty() {
-            return;
-        }
-        if !self.0.is_empty() {
-            self.0 += " ";
-        }
-        self.0 += &str.0;
-    }
-
-    #[inline]
-    fn push_token(&mut self, token: &UciToken) {
-        if !self.0.is_empty() {
-            self.0 += " ";
-        }
-        self.0 += token.as_str();
     }
 }
 
@@ -381,10 +265,4 @@ fn from_str_impl(value: &str, bad_tokens: &[&'static str]) -> Result<String, Err
         s += token;
     }
     Ok(s)
-}
-
-#[inline]
-pub fn tokenize(s: &str) -> impl Iterator<Item = &UciToken> {
-    s.split_whitespace()
-        .map(|tok| unsafe { UciToken::new_unchecked(tok) })
 }

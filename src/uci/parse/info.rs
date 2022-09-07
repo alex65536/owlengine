@@ -26,7 +26,7 @@ fn make_permille(val: u64, warn: &mut impl Sink<Error>) -> Permille {
     Permille::new_truncated(val)
 }
 
-pub fn parse(tokens: &mut &[&UciToken], warn: &mut impl Sink<Error>) -> Option<Info> {
+pub fn parse(tokens: &mut &[&Token], warn: &mut impl Sink<Error>) -> Option<Info> {
     match tok::next_warn(tokens, warn)?.as_str() {
         "depth" => Some(Info::Depth(tok::parse(tokens, warn)?)),
         "seldepth" => Some(Info::SelDepth(tok::parse(tokens, warn)?)),

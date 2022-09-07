@@ -2,13 +2,13 @@ use std::{error::Error, str::FromStr};
 
 use crate::warn::{OptionExt, ResultExt, Sink};
 
-use super::super::str::{PushTokens, UciToken};
+use super::super::token::{PushTokens, Token};
 use super::EolError;
 
 pub fn try_split<'a, 'b>(
-    src: &'a [&'b UciToken],
+    src: &'a [&'b Token],
     mid: &str,
-) -> (&'a [&'b UciToken], Option<&'a [&'b UciToken]>) {
+) -> (&'a [&'b Token], Option<&'a [&'b Token]>) {
     match src.iter().position(|v| *v == mid) {
         Some(pos) => (&src[..pos], Some(&src[pos + 1..])),
         None => (src, None),
@@ -16,29 +16,29 @@ pub fn try_split<'a, 'b>(
 }
 
 pub fn split<'a, 'b, E: Error>(
-    src: &'a [&'b UciToken],
+    src: &'a [&'b Token],
     mid: &str,
     error: E,
     warn: &mut impl Sink<E>,
-) -> (&'a [&'b UciToken], &'a [&'b UciToken]) {
+) -> (&'a [&'b Token], &'a [&'b Token]) {
     let (l, r) = try_split(src, mid);
     (l, r.or_warn_with(error, warn).unwrap_or(&[]))
 }
 
-pub fn next<'a>(tokens: &mut &[&'a UciToken]) -> Option<&'a UciToken> {
+pub fn next<'a>(tokens: &mut &[&'a Token]) -> Option<&'a Token> {
     let result;
     (result, *tokens) = tokens.split_first()?;
     Some(*result)
 }
 
 pub fn next_warn<'a, E: From<EolError> + Error>(
-    tokens: &mut &[&'a UciToken],
+    tokens: &mut &[&'a Token],
     warn: &mut impl Sink<E>,
-) -> Option<&'a UciToken> {
+) -> Option<&'a Token> {
     next(tokens).or_warn_with(EolError.into(), warn)
 }
 
-pub fn parse<D, E, T>(tokens: &mut &[&UciToken], warn: &mut impl Sink<E>) -> Option<T>
+pub fn parse<D, E, T>(tokens: &mut &[&Token], warn: &mut impl Sink<E>) -> Option<T>
 where
     D: Error + Clone,
     E: From<D> + From<EolError> + Error,
@@ -47,11 +47,7 @@ where
     parse_map(tokens, From::from, warn)
 }
 
-pub fn parse_map<D, E, F, T>(
-    tokens: &mut &[&UciToken],
-    func: F,
-    warn: &mut impl Sink<E>,
-) -> Option<T>
+pub fn parse_map<D, E, F, T>(tokens: &mut &[&Token], func: F, warn: &mut impl Sink<E>) -> Option<T>
 where
     D: Error + Clone,
     E: From<EolError> + Error,
@@ -66,7 +62,7 @@ where
 }
 
 pub fn expect<E: From<EolError> + Error>(
-    tokens: &mut &[&UciToken],
+    tokens: &mut &[&Token],
     expected: &str,
     on_mismatch: E,
     warn: &mut impl Sink<E>,
@@ -80,7 +76,7 @@ pub fn expect<E: From<EolError> + Error>(
 
 pub trait PushTokensExt: PushTokens {
     fn do_tok(&mut self, token: &str) {
-        self.push_token(unsafe { UciToken::new_unchecked(token) })
+        self.push_token(unsafe { Token::new_unchecked(token) })
     }
 }
 

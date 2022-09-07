@@ -9,7 +9,7 @@ pub enum Error {
     UnexpectedToken(String),
 }
 
-pub fn parse(tokens: &mut &[&UciToken], warn: &mut impl Sink<Error>) -> Option<TriStatus> {
+pub fn parse(tokens: &mut &[&Token], warn: &mut impl Sink<Error>) -> Option<TriStatus> {
     match tok::next_warn(tokens, warn)?.as_str() {
         "ok" => Some(TriStatus::Ok),
         "checking" => Some(TriStatus::Checking),

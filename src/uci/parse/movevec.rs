@@ -8,7 +8,7 @@ pub struct Error {
     pub error: uci::RawParseError,
 }
 
-fn looks_like_move(tok: &UciToken) -> bool {
+fn looks_like_move(tok: &Token) -> bool {
     let bytes = tok.as_bytes();
     matches!(bytes.len(), 4 | 5)
         && bytes[0].is_ascii_lowercase()
@@ -18,7 +18,7 @@ fn looks_like_move(tok: &UciToken) -> bool {
 }
 
 pub fn parse(
-    tokens: &mut &[&UciToken],
+    tokens: &mut &[&Token],
     until_first_error: bool,
     warn: &mut impl Sink<Error>,
 ) -> Vec<UciMove> {

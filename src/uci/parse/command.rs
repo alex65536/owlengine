@@ -50,7 +50,7 @@ pub enum Error {
     GoNoLimits,
 }
 
-fn parse_go(tokens: &mut &[&UciToken], warn: &mut impl Sink<Error>) -> Command {
+fn parse_go(tokens: &mut &[&Token], warn: &mut impl Sink<Error>) -> Command {
     let mut searchmoves = None;
     let mut ponder = None;
     let mut infinite = None;
@@ -64,7 +64,7 @@ fn parse_go(tokens: &mut &[&UciToken], warn: &mut impl Sink<Error>) -> Command {
     let mut nodes = None;
     let mut movetime = None;
 
-    while let Some(item) = tok::next(tokens).map(UciToken::as_str) {
+    while let Some(item) = tok::next(tokens).map(Token::as_str) {
         macro_rules! parse_int {
             ($ident:ident) => {{
                 if $ident.is_some() {
@@ -166,7 +166,7 @@ fn parse_go(tokens: &mut &[&UciToken], warn: &mut impl Sink<Error>) -> Command {
     }
 }
 
-pub fn parse(tokens: &mut &[&UciToken], warn: &mut impl Sink<Error>) -> Option<Command> {
+pub fn parse(tokens: &mut &[&Token], warn: &mut impl Sink<Error>) -> Option<Command> {
     let result = (|| loop {
         match tok::next(tokens)?.as_str() {
             "uci" => return Some(Command::Uci),
@@ -214,7 +214,7 @@ pub fn parse(tokens: &mut &[&UciToken], warn: &mut impl Sink<Error>) -> Option<C
                 let (mut position, moves) =
                     tok::split(tokens, "moves", Error::PositionNoMoves, warn);
                 *tokens = &[];
-                let startpos = match tok::next(&mut position).map(UciToken::as_str) {
+                let startpos = match tok::next(&mut position).map(Token::as_str) {
                     Some("startpos") => {
                         if !position.is_empty() {
                             warn.warn(Error::ExtraToken(position[0].to_string()));

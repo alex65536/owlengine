@@ -29,7 +29,7 @@ pub enum Error {
     },
 }
 
-pub fn parse(tokens: &mut &[&UciToken], warn: &mut impl Sink<Error>) -> Option<OptBody> {
+pub fn parse(tokens: &mut &[&Token], warn: &mut impl Sink<Error>) -> Option<OptBody> {
     let result = (|| match tok::next_warn(tokens, warn)?.as_str() {
         "check" => {
             tok::expect(tokens, "default", Error::ExpectedToken("default"), warn)?;

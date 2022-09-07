@@ -36,7 +36,7 @@ pub enum Error {
     OptionBadBody(#[from] optbody::Error),
 }
 
-pub fn parse(tokens: &mut &[&UciToken], warn: &mut impl Sink<Error>) -> Option<Message> {
+pub fn parse(tokens: &mut &[&Token], warn: &mut impl Sink<Error>) -> Option<Message> {
     let result = (|| loop {
         match tok::next(tokens)?.as_str() {
             "id" => {
