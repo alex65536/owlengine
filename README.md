@@ -6,4 +6,4 @@
 
 UCI implementation in Rust, suitable both for engines and GUIs
 
-TODO
+TODO: write this `README`!
