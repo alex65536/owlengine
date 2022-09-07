@@ -13,7 +13,7 @@ mod prelude {
         token::{PushTokens, Token},
     };
     pub use super::{tok::PushTokensExt, EolError};
-    pub use crate::warn::{OptionExt, ResultExt, Sink, SinkExt};
+    pub use wurm::prelude::*;
     pub use owlchess::moves::{uci, UciMove};
     pub use std::{num::ParseIntError, time::Duration};
     pub use thiserror::Error;
@@ -23,7 +23,7 @@ use std::error::Error;
 
 use thiserror::Error;
 
-use crate::warn::Sink;
+use wurm::Warn;
 
 use super::{
     msg::{Command, Message},
@@ -34,12 +34,12 @@ use super::{
 pub trait Parse {
     type Err: Error;
 
-    fn parse(tokens: &mut &[&Token], warn: &mut impl Sink<Self::Err>) -> Option<Self>
+    fn parse(tokens: &mut &[&Token], warn: &mut impl Warn<Self::Err>) -> Option<Self>
     where
         Self: Sized;
 
     #[inline]
-    fn parse_line(line: &str, warn: &mut impl Sink<Self::Err>) -> Option<Self>
+    fn parse_line(line: &str, warn: &mut impl Warn<Self::Err>) -> Option<Self>
     where
         Self: Sized,
     {
@@ -74,7 +74,7 @@ pub use tristatus::Error as TriStatusError;
 impl Parse for Command {
     type Err = command::Error;
 
-    fn parse(tokens: &mut &[&Token], warn: &mut impl Sink<Self::Err>) -> Option<Self> {
+    fn parse(tokens: &mut &[&Token], warn: &mut impl Warn<Self::Err>) -> Option<Self> {
         command::parse(tokens, warn)
     }
 }
@@ -88,7 +88,7 @@ impl Fmt for Command {
 impl Parse for Message {
     type Err = message::Error;
 
-    fn parse(tokens: &mut &[&Token], warn: &mut impl Sink<Self::Err>) -> Option<Self> {
+    fn parse(tokens: &mut &[&Token], warn: &mut impl Warn<Self::Err>) -> Option<Self> {
         message::parse(tokens, warn)
     }
 }

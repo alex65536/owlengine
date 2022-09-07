@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 owlchess = "0.3.1"
 thiserror = "1.0.32"
+wurm = "1.0.0"

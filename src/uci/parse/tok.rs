@@ -1,6 +1,6 @@
 use std::{error::Error, fmt, str::FromStr};
 
-use crate::warn::{OptionExt, ResultExt, Sink};
+use wurm::{OptionExt, ResultExt, Warn};
 
 use super::super::token::{MultiTokenSafe, PushTokens, Token, TokenSafe};
 use super::EolError;
@@ -19,7 +19,7 @@ pub fn split<'a, 'b, E: Error>(
     src: &'a [&'b Token],
     mid: &str,
     error: E,
-    warn: &mut impl Sink<E>,
+    warn: &mut impl Warn<E>,
 ) -> (&'a [&'b Token], &'a [&'b Token]) {
     let (l, r) = try_split(src, mid);
     (l, r.or_warn_with(error, warn).unwrap_or(&[]))
@@ -33,23 +33,23 @@ pub fn next<'a>(tokens: &mut &[&'a Token]) -> Option<&'a Token> {
 
 pub fn next_warn<'a, E: From<EolError> + Error>(
     tokens: &mut &[&'a Token],
-    warn: &mut impl Sink<E>,
+    warn: &mut impl Warn<E>,
 ) -> Option<&'a Token> {
     next(tokens).or_warn_with(EolError.into(), warn)
 }
 
-pub fn parse<D, E, T>(tokens: &mut &[&Token], warn: &mut impl Sink<E>) -> Option<T>
+pub fn parse<D, E, T>(tokens: &mut &[&Token], warn: &mut impl Warn<E>) -> Option<T>
 where
-    D: Error + Clone,
+    D: Error,
     E: From<D> + From<EolError> + Error,
     T: FromStr<Err = D>,
 {
     parse_map(tokens, From::from, warn)
 }
 
-pub fn parse_map<D, E, F, T>(tokens: &mut &[&Token], func: F, warn: &mut impl Sink<E>) -> Option<T>
+pub fn parse_map<D, E, F, T>(tokens: &mut &[&Token], func: F, warn: &mut impl Warn<E>) -> Option<T>
 where
-    D: Error + Clone,
+    D: Error,
     E: From<EolError> + Error,
     F: FnOnce(D) -> E,
     T: FromStr<Err = D>,
@@ -58,14 +58,13 @@ where
         .as_str()
         .parse()
         .or_warn_map(func, warn)
-        .ok()
 }
 
 pub fn expect<E: From<EolError> + Error>(
     tokens: &mut &[&Token],
     expected: &str,
     on_mismatch: E,
-    warn: &mut impl Sink<E>,
+    warn: &mut impl Warn<E>,
 ) -> Option<()> {
     if next_warn(tokens, warn)? != expected {
         warn.warn(on_mismatch);

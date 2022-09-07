@@ -30,7 +30,7 @@ pub enum Error {
     },
 }
 
-pub fn parse(tokens: &mut &[&Token], warn: &mut impl Sink<Error>) -> Option<OptBody> {
+pub fn parse(tokens: &mut &[&Token], warn: &mut impl Warn<Error>) -> Option<OptBody> {
     let result = (|| match tok::next_warn(tokens, warn)?.as_str() {
         "check" => {
             tok::expect(tokens, "default", Error::ExpectedToken("default"), warn)?;
@@ -62,14 +62,12 @@ pub fn parse(tokens: &mut &[&Token], warn: &mut impl Sink<Error>) -> Option<OptB
                 .or_warn_with(Error::UnexpectedEol(EolError), warn)
                 .unwrap_or(&[]);
             let default = OptComboVar::from_tokens(default)
-                .or_warn_map(Error::BadComboDefaultVar, warn)
-                .ok()?;
+                .or_warn_map(Error::BadComboDefaultVar, warn)?;
             let vars: Vec<_> = iter
                 .enumerate()
                 .filter_map(|(pos, toks)| {
                     OptComboVar::from_tokens(toks)
                         .or_warn_map(|error| Error::BadComboVar { pos, error }, warn)
-                        .ok()
                 })
                 .collect();
             Some(OptBody::Combo { default, vars })

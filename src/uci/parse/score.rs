@@ -14,7 +14,7 @@ pub enum Error {
     MateTooLarge(i64),
 }
 
-fn parse_unbounded(tokens: &mut &[&Token], warn: &mut impl Sink<Error>) -> Option<RelScore> {
+fn parse_unbounded(tokens: &mut &[&Token], warn: &mut impl Warn<Error>) -> Option<RelScore> {
     match tok::next_warn(tokens, warn)?.as_str() {
         "cp" => {
             let value = tok::parse(tokens, warn)?;
@@ -39,7 +39,7 @@ fn parse_unbounded(tokens: &mut &[&Token], warn: &mut impl Sink<Error>) -> Optio
     }
 }
 
-pub fn parse(tokens: &mut &[&Token], warn: &mut impl Sink<Error>) -> Option<BoundedRelScore> {
+pub fn parse(tokens: &mut &[&Token], warn: &mut impl Warn<Error>) -> Option<BoundedRelScore> {
     let score = parse_unbounded(tokens, warn)?;
     let bound = match tokens.first().map(|t| t.as_str()) {
         Some("lowerbound") => {

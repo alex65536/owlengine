@@ -20,7 +20,7 @@ fn looks_like_move(tok: &Token) -> bool {
 pub fn parse(
     tokens: &mut &[&Token],
     until_first_error: bool,
-    warn: &mut impl Sink<Error>,
+    warn: &mut impl Warn<Error>,
 ) -> Vec<UciMove> {
     let mut moves = Vec::new();
     while !tokens.is_empty() {

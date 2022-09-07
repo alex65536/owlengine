@@ -37,7 +37,7 @@ pub enum Error {
     OptionBadBody(#[from] optbody::Error),
 }
 
-pub fn parse(tokens: &mut &[&Token], warn: &mut impl Sink<Error>) -> Option<Message> {
+pub fn parse(tokens: &mut &[&Token], warn: &mut impl Warn<Error>) -> Option<Message> {
     let result = (|| loop {
         match tok::next(tokens)?.as_str() {
             "id" => {
@@ -73,7 +73,7 @@ pub fn parse(tokens: &mut &[&Token], warn: &mut impl Sink<Error>) -> Option<Mess
                         return None;
                     }
                     let ponder = tok::next_warn(tokens, warn)?;
-                    ponder.parse().or_warn_map(Error::InvalidPonder, warn).ok()
+                    ponder.parse().or_warn_map(Error::InvalidPonder, warn)
                 })();
                 return Some(Message::BestMove { bestmove, ponder });
             }
@@ -111,8 +111,7 @@ pub fn parse(tokens: &mut &[&Token], warn: &mut impl Sink<Error>) -> Option<Mess
                 let (name, mut body) = tok::split(tokens, "type", Error::OptionNoType, warn);
                 *tokens = &[];
                 let name = OptName::from_tokens(name)
-                    .or_warn_map(Error::OptionBadName, warn)
-                    .ok()?;
+                    .or_warn_map(Error::OptionBadName, warn)?;
                 let body = optbody::parse(&mut body, &mut warn.adapt())?;
                 return Some(Message::Option { name, body });
             }

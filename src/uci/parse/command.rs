@@ -51,7 +51,7 @@ pub enum Error {
     GoNoLimits,
 }
 
-fn parse_go(tokens: &mut &[&Token], warn: &mut impl Sink<Error>) -> Command {
+fn parse_go(tokens: &mut &[&Token], warn: &mut impl Warn<Error>) -> Command {
     let mut searchmoves = None;
     let mut ponder = None;
     let mut infinite = None;
@@ -167,7 +167,7 @@ fn parse_go(tokens: &mut &[&Token], warn: &mut impl Sink<Error>) -> Command {
     }
 }
 
-pub fn parse(tokens: &mut &[&Token], warn: &mut impl Sink<Error>) -> Option<Command> {
+pub fn parse(tokens: &mut &[&Token], warn: &mut impl Warn<Error>) -> Option<Command> {
     let result = (|| loop {
         match tok::next(tokens)?.as_str() {
             "uci" => return Some(Command::Uci),
@@ -187,8 +187,7 @@ pub fn parse(tokens: &mut &[&Token], warn: &mut impl Sink<Error>) -> Option<Comm
                 let (name, value) = tok::try_split(tokens, "value");
                 *tokens = &[];
                 let name = OptName::from_tokens(name)
-                    .or_warn_map(Error::SetOptionBadName, warn)
-                    .ok()?;
+                    .or_warn_map(Error::SetOptionBadName, warn)?;
                 let value = value.map(UciString::from_tokens);
                 return Some(Command::SetOption { name, value });
             }
@@ -199,8 +198,7 @@ pub fn parse(tokens: &mut &[&Token], warn: &mut impl Sink<Error>) -> Option<Comm
                         let (name, code) = tok::split(tokens, "code", Error::RegisterNoCode, warn);
                         *tokens = &[];
                         let name = RegisterName::from_tokens(name)
-                            .or_warn_map(Error::RegisterBadName, warn)
-                            .ok()?;
+                            .or_warn_map(Error::RegisterBadName, warn)?;
                         let code = UciString::from_tokens(code);
                         Some(Command::Register(Register::Now { name, code }))
                     }
@@ -222,7 +220,7 @@ pub fn parse(tokens: &mut &[&Token], warn: &mut impl Sink<Error>) -> Option<Comm
                         }
                         RawBoard::initial()
                     }
-                    Some("fen") => RawBoard::from_fen(&position.join(" ")).or_warn(warn).ok()?,
+                    Some("fen") => RawBoard::from_fen(&position.join(" ")).or_warn(warn)?,
                     Some(tok) => {
                         warn.warn(Error::UnexpectedToken(tok.to_string()));
                         return None;
@@ -240,8 +238,7 @@ pub fn parse(tokens: &mut &[&Token], warn: &mut impl Sink<Error>) -> Option<Comm
                             .map_err(|error| Error::InvalidMove { pos, error })
                     })
                     .collect::<Result<Vec<_>, _>>()
-                    .or_warn(warn)
-                    .ok()?;
+                    .or_warn(warn)?;
                 return Some(Command::Position { startpos, moves });
             }
             "go" => return Some(parse_go(tokens, warn)),
