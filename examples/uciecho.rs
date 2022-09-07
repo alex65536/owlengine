@@ -1,6 +1,6 @@
 use std::{env, fmt::Debug, io, process};
 
-use owlengine::warn::Stderr;
+use wurm::Stderr;
 
 use owlengine::uci::{
     msg::{Command, Message},
@@ -11,9 +11,9 @@ fn do_uci_explore<P>()
 where
     P: Parse + Fmt + Debug,
 {
-    let mut sink = Stderr;
+    let mut warn = Stderr;
     for line in io::stdin().lines() {
-        let item = P::parse_line(&line.unwrap(), &mut sink);
+        let item = P::parse_line(&line.unwrap(), &mut warn);
         if let Some(item) = item {
             println!("{}", item.fmt_line());
             eprintln!("{:?}", item);
