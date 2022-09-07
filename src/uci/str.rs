@@ -2,13 +2,13 @@ use std::{
     borrow::Borrow,
     cmp::Ordering,
     convert::Infallible,
-    fmt,
+    fmt::{self, Write},
     hash::{Hash, Hasher},
     ops::Deref,
     str::FromStr,
 };
 
-use super::token::Token;
+use super::token::{MultiTokenSafe, PushTokens, Token, TokenSafe};
 
 use thiserror::Error;
 
@@ -20,6 +20,8 @@ macro_rules! impl_uci_str_base {
                 self.0.fmt(f)
             }
         }
+
+        unsafe impl MultiTokenSafe for $name {}
 
         impl From<$name> for String {
             #[inline]
@@ -170,6 +172,13 @@ pub enum Error {
 #[repr(transparent)]
 pub struct UciStr(str);
 
+impl UciStr {
+    #[inline]
+    fn to_uci_string(&self) -> UciString {
+        UciString(self.0.to_owned())
+    }
+}
+
 impl Deref for UciStr {
     type Target = str;
 
@@ -178,6 +187,14 @@ impl Deref for UciStr {
         self.as_str()
     }
 }
+
+impl fmt::Display for UciStr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
+unsafe impl MultiTokenSafe for UciStr {}
 
 impl UciStr {
     #[inline]
@@ -191,13 +208,12 @@ impl ToOwned for UciStr {
 
     #[inline]
     fn to_owned(&self) -> Self::Owned {
-        UciString(self.0.to_owned())
+        self.to_uci_string()
     }
 }
 
-// FIXME : pub(super) is a temporary hack
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Default)]
-pub struct UciString(pub(super) String);
+pub struct UciString(String);
 
 impl_uci_str_base! {UciString}
 impl_case_sensitive! {UciString}
@@ -218,17 +234,42 @@ impl From<&str> for UciString {
     }
 }
 
-impl From<&String> for UciString {
-    #[inline]
-    fn from(s: &String) -> Self {
-        Self::from(s.as_str())
-    }
-}
-
 impl UciString {
     #[inline]
     pub fn from_tokens(tokens: &[&Token]) -> Self {
         Self(tokens.join(" "))
+    }
+
+    #[inline]
+    fn maybe_push_space(&mut self) {
+        if !self.0.is_empty() {
+            self.0 += " ";
+        }
+    }
+}
+
+impl PushTokens for UciString {
+    #[inline]
+    fn push(&mut self, token: &Token) {
+        self.maybe_push_space();
+        self.0 += token.as_str();
+    }
+
+    #[inline]
+    fn push_fmt<T: TokenSafe>(&mut self, value: &T) {
+        self.maybe_push_space();
+        write!(self.0, "{}", value).expect("formatting failed");
+    }
+
+    #[inline]
+    fn push_many_fmt<T: MultiTokenSafe>(&mut self, value: &T) {
+        let orig_len = self.0.len();
+        self.maybe_push_space();
+        let spaced_len = self.0.len();
+        write!(self.0, "{}", value).expect("formatting failed");
+        if self.0.len() == spaced_len {
+            self.0.truncate(orig_len);
+        }
     }
 }
 

@@ -23,8 +23,8 @@ pub fn parse(tokens: &mut &[&Token], warn: &mut impl Sink<Error>) -> Option<TriS
 
 pub fn fmt(src: &TriStatus, f: &mut impl PushTokens) {
     match src {
-        TriStatus::Ok => f.do_tok("ok"),
-        TriStatus::Checking => f.do_tok("checking"),
-        TriStatus::Error => f.do_tok("error"),
+        TriStatus::Ok => f.push_kw("ok"),
+        TriStatus::Checking => f.push_kw("checking"),
+        TriStatus::Error => f.push_kw("error"),
     }
 }

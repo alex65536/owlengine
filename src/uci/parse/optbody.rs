@@ -92,32 +92,24 @@ pub fn parse(tokens: &mut &[&Token], warn: &mut impl Sink<Error>) -> Option<OptB
 pub fn fmt(src: &OptBody, f: &mut impl PushTokens) {
     match src {
         OptBody::Check(val) => {
-            f.do_tok("check");
-            f.do_tok("default");
-            f.do_tok(if *val { "true" } else { "false" });
+            f.push_kw("check");
+            f.push_tag("default", val);
         }
         OptBody::Spin { default, min, max } => {
-            f.do_tok("spin");
-            f.do_tok("default");
-            f.do_tok(&default.to_string());
-            f.do_tok("min");
-            f.do_tok(&min.to_string());
-            f.do_tok("max");
-            f.do_tok(&max.to_string());
+            f.push_kw("spin");
+            f.push_tag("default", default);
+            f.push_tag("min", min);
+            f.push_tag("max", max);
         }
         OptBody::Combo { default, vars } => {
-            f.do_tok("combo");
-            f.do_tok("default");
-            f.push_str(default.as_ref());
-            for var in vars {
-                f.do_tok("var");
-                f.push_str(var.as_ref());
-            }
+            f.push_kw("combo");
+            f.push_tag_many("default", default);
+            vars.iter().for_each(|var| f.push_tag_many("var", var));
         }
-        OptBody::Button => f.do_tok("button"),
+        OptBody::Button => f.push_kw("button"),
         OptBody::String(str) => {
-            f.do_tok("string");
-            f.push_str(str);
+            f.push_kw("string");
+            f.push_tag_many("default", str);
         }
     }
 }

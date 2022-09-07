@@ -258,45 +258,40 @@ pub fn parse(tokens: &mut &[&Token], warn: &mut impl Sink<Error>) -> Option<Comm
 
 pub fn fmt(src: &Command, f: &mut impl PushTokens) {
     match src {
-        Command::Uci => f.do_tok("uci"),
+        Command::Uci => f.push_kw("uci"),
         Command::Debug(val) => {
-            f.do_tok("debug");
-            f.do_tok(if *val { "on" } else { "off" });
+            f.push_kw("debug");
+            f.push_kw(if *val { "on" } else { "off" });
         }
-        Command::IsReady => f.do_tok("isready"),
+        Command::IsReady => f.push_kw("isready"),
         Command::SetOption { name, value } => {
-            f.do_tok("setoption");
-            f.do_tok("name");
-            f.push_str(name.as_ref());
+            f.push_kw("setoption");
+            f.push_tag_many("name", name);
             if let Some(value) = value {
-                f.do_tok("value");
-                f.push_str(value);
+                f.push_tag_many("value", value);
             }
         }
         Command::Register(reg) => {
-            f.do_tok("register");
+            f.push_kw("register");
             match reg {
-                Register::Later => f.do_tok("later"),
+                Register::Later => f.push_kw("later"),
                 Register::Now { name, code } => {
-                    f.do_tok("name");
-                    f.push_str(name);
-                    f.do_tok("code");
-                    f.push_str(code);
+                    f.push_tag_many("name", name);
+                    f.push_tag_many("code", code);
                 }
             }
         }
-        Command::UciNewGame => f.do_tok("ucinewgame"),
+        Command::UciNewGame => f.push_kw("ucinewgame"),
         Command::Position { startpos, moves } => {
-            f.do_tok("position");
+            f.push_kw("position");
             if startpos == &RawBoard::initial() {
-                f.do_tok("startpos");
+                f.push_kw("startpos");
             } else {
-                f.do_tok("fen");
-                f.push_str(&UciString::from(&startpos.to_string()));
+                f.push_tag_many("fen", startpos);
             }
-            f.do_tok("moves");
+            f.push_kw("moves");
             for mv in moves {
-                f.do_tok(&mv.to_string());
+                f.push_fmt(mv);
             }
         }
         Command::Go {
@@ -304,16 +299,16 @@ pub fn fmt(src: &Command, f: &mut impl PushTokens) {
             ponder,
             limits,
         } => {
-            f.do_tok("go");
+            f.push_kw("go");
             if let Some(searchmoves) = searchmoves {
-                f.do_tok("searchmoves");
+                f.push_kw("searchmoves");
                 movevec::fmt(searchmoves, f);
             }
             if ponder.is_some() {
-                f.do_tok("ponder");
+                f.push_kw("ponder");
             }
             match limits {
-                GoLimits::Infinite => f.do_tok("infinite"),
+                GoLimits::Infinite => f.push_kw("infinite"),
                 GoLimits::Clock {
                     wtime,
                     btime,
@@ -321,52 +316,41 @@ pub fn fmt(src: &Command, f: &mut impl PushTokens) {
                     binc,
                     movestogo,
                 } => {
-                    f.do_tok("wtime");
-                    f.do_tok(&wtime.as_millis().to_string());
-                    f.do_tok("btime");
-                    f.do_tok(&btime.as_millis().to_string());
+                    f.push_tag("wtime", &wtime.as_millis());
+                    f.push_tag("btime", &btime.as_millis());
                     if winc != &Duration::ZERO {
-                        f.do_tok("winc");
-                        f.do_tok(&winc.as_millis().to_string());
+                        f.push_tag("winc", &winc.as_millis());
                     }
                     if binc != &Duration::ZERO {
-                        f.do_tok("binc");
-                        f.do_tok(&binc.as_millis().to_string());
+                        f.push_tag("binc", &binc.as_millis());
                     }
                     if let Some(movestogo) = movestogo {
-                        f.do_tok("movestogo");
-                        f.do_tok(&movestogo.to_string());
+                        f.push_tag("movestogo", movestogo);
                     }
                 }
-                GoLimits::Mate(value) => {
-                    f.do_tok("mate");
-                    f.do_tok(&value.to_string());
-                }
+                GoLimits::Mate(value) => f.push_tag("mate", value),
                 GoLimits::Limits {
                     depth,
                     nodes,
                     movetime,
                 } => {
                     if depth.is_none() && nodes.is_none() && movetime.is_none() {
-                        f.do_tok("infinite");
+                        f.push_kw("infinite");
                     }
                     if let Some(depth) = depth {
-                        f.do_tok("depth");
-                        f.do_tok(&depth.to_string());
+                        f.push_tag("depth", depth);
                     }
                     if let Some(nodes) = nodes {
-                        f.do_tok("nodes");
-                        f.do_tok(&nodes.to_string());
+                        f.push_tag("nodes", nodes);
                     }
                     if let Some(movetime) = movetime {
-                        f.do_tok("movetime");
-                        f.do_tok(&movetime.as_millis().to_string());
+                        f.push_tag("movetime", &movetime.as_millis());
                     }
                 }
             }
         }
-        Command::Stop => f.do_tok("stop"),
-        Command::PonderHit => f.do_tok("ponderhit"),
-        Command::Quit => f.do_tok("quit"),
+        Command::Stop => f.push_kw("stop"),
+        Command::PonderHit => f.push_kw("ponderhit"),
+        Command::Quit => f.push_kw("quit"),
     }
 }

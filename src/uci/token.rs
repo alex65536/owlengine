@@ -1,6 +1,6 @@
-use std::{borrow::Borrow, ops::Deref};
+use std::{borrow::Borrow, fmt::Display, num, ops::Deref};
 
-use super::str::{UciStr, UciString};
+use owlchess::{moves::UciMove, Board, Move, RawBoard};
 
 use thiserror::Error;
 
@@ -96,35 +96,39 @@ pub fn tokenize(s: &str) -> impl Iterator<Item = &Token> {
         .map(|tok| unsafe { Token::new_unchecked(tok) })
 }
 
-pub trait PushTokens {
-    fn push_token(&mut self, token: &Token);
-    fn push_str(&mut self, str: &UciStr);
-
-    #[inline]
-    fn push_tokens(&mut self, tokens: &[&Token]) {
-        for token in tokens {
-            self.push_token(token);
-        }
-    }
+macro_rules! token_safe {
+    ($($ty:ty),* $(,)?) => {
+        $(
+            unsafe impl TokenSafe for $ty {}
+        )*
+    };
 }
 
-impl PushTokens for UciString {
-    #[inline]
-    fn push_str(&mut self, str: &UciStr) {
-        if str.is_empty() {
-            return;
-        }
-        if !self.0.is_empty() {
-            self.0 += " ";
-        }
-        self.0 += &str;
-    }
+pub unsafe trait TokenSafe: Display {}
+pub unsafe trait MultiTokenSafe: Display {}
+
+token_safe! {
+    bool,
+    i8, i16, i32, i64, i128,
+    u8, u16, u32, u64, u128,
+    num::NonZeroI8, num::NonZeroI16, num::NonZeroI32, num::NonZeroI64, num::NonZeroI128,
+    num::NonZeroU8, num::NonZeroU16, num::NonZeroU32, num::NonZeroU64, num::NonZeroU128,
+    Move, UciMove,
+}
+
+unsafe impl<T: TokenSafe> MultiTokenSafe for T {}
+unsafe impl MultiTokenSafe for RawBoard {}
+unsafe impl MultiTokenSafe for Board {}
+
+pub trait PushTokens {
+    fn push(&mut self, token: &Token);
+    fn push_fmt<T: TokenSafe>(&mut self, value: &T);
+    fn push_many_fmt<T: MultiTokenSafe>(&mut self, value: &T);
 
     #[inline]
-    fn push_token(&mut self, token: &Token) {
-        if !self.0.is_empty() {
-            self.0 += " ";
+    fn push_many(&mut self, tokens: &[&Token]) {
+        for token in tokens {
+            self.push(token);
         }
-        self.0 += token.as_str();
     }
 }

@@ -67,69 +67,32 @@ pub fn parse(tokens: &mut &[&Token], warn: &mut impl Sink<Error>) -> Option<Info
 
 pub fn fmt(src: &Info, f: &mut impl PushTokens) {
     match src {
-        Info::Depth(val) => {
-            f.do_tok("depth");
-            f.do_tok(&val.to_string());
-        }
-        Info::SelDepth(val) => {
-            f.do_tok("seldepth");
-            f.do_tok(&val.to_string());
-        }
-        Info::Time(val) => {
-            f.do_tok("time");
-            f.do_tok(&val.as_millis().to_string());
-        }
-        Info::Nodes(val) => {
-            f.do_tok("nodes");
-            f.do_tok(&val.to_string());
-        }
+        Info::Depth(val) => f.push_tag("depth", val),
+        Info::SelDepth(val) => f.push_tag("seldepth", val),
+        Info::Time(val) => f.push_tag("time", &val.as_millis()),
+        Info::Nodes(val) => f.push_tag("nodes", val),
         Info::Pv(moves) => {
-            f.do_tok("pv");
+            f.push_kw("pv");
             movevec::fmt(moves, f);
         }
-        Info::MultiPv(val) => {
-            f.do_tok("multipv");
-            f.do_tok(&val.to_string());
-        }
+        Info::MultiPv(val) => f.push_tag("multipv", val),
         Info::Score(val) => {
-            f.do_tok("score");
+            f.push_kw("score");
             score::fmt(val, f);
         }
-        Info::CurrMove(val) => {
-            f.do_tok("currmove");
-            f.do_tok(&val.to_string());
-        }
-        Info::CurrMoveNumber(val) => {
-            f.do_tok("currmovenumber");
-            f.do_tok(&val.to_string());
-        }
-        Info::HashFull(val) => {
-            f.do_tok("hashfull");
-            f.do_tok(&val.amount().to_string());
-        }
-        Info::Nps(val) => {
-            f.do_tok("nps");
-            f.do_tok(&val.to_string());
-        }
-        Info::TbHits(val) => {
-            f.do_tok("tbhits");
-            f.do_tok(&val.to_string());
-        }
-        Info::SbHits(val) => {
-            f.do_tok("sbhits");
-            f.do_tok(&val.to_string());
-        }
-        Info::CpuLoad(val) => {
-            f.do_tok("cpuload");
-            f.do_tok(&val.amount().to_string());
-        }
+        Info::CurrMove(val) => f.push_tag("currmove", val),
+        Info::CurrMoveNumber(val) => f.push_tag("currmovenumber", val),
+        Info::HashFull(val) => f.push_tag("hashfull", &val.amount()),
+        Info::Nps(val) => f.push_tag("nps", val),
+        Info::TbHits(val) => f.push_tag("tbhits", val),
+        Info::SbHits(val) => f.push_tag("sbhits", val),
+        Info::CpuLoad(val) => f.push_tag("cpuload", &val.amount()),
         Info::Refutation(moves) => {
-            f.do_tok("refutation");
+            f.push_kw("refutation");
             movevec::fmt(moves, f);
         }
         Info::CurrLine { cpu_num, moves } => {
-            f.do_tok("currline");
-            f.do_tok(&cpu_num.to_string());
+            f.push_tag("currline", cpu_num);
             movevec::fmt(moves, f);
         }
     }

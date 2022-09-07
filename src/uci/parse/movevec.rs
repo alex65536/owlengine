@@ -46,7 +46,5 @@ pub fn parse(
 }
 
 pub fn fmt(src: &[UciMove], f: &mut impl PushTokens) {
-    for mv in src {
-        f.do_tok(&mv.to_string());
-    }
+    src.iter().for_each(|mv| f.push_fmt(mv));
 }

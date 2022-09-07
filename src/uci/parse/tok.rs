@@ -1,8 +1,8 @@
-use std::{error::Error, str::FromStr};
+use std::{error::Error, fmt, str::FromStr};
 
 use crate::warn::{OptionExt, ResultExt, Sink};
 
-use super::super::token::{PushTokens, Token};
+use super::super::token::{MultiTokenSafe, PushTokens, Token, TokenSafe};
 use super::EolError;
 
 pub fn try_split<'a, 'b>(
@@ -74,9 +74,33 @@ pub fn expect<E: From<EolError> + Error>(
     Some(())
 }
 
+struct Kw(&'static str);
+
+unsafe impl TokenSafe for Kw {}
+
+impl fmt::Display for Kw {
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
 pub trait PushTokensExt: PushTokens {
-    fn do_tok(&mut self, token: &str) {
-        self.push_token(unsafe { Token::new_unchecked(token) })
+    #[inline]
+    fn push_kw(&mut self, kw: &'static str) {
+        self.push_fmt(&Kw(kw));
+    }
+
+    #[inline]
+    fn push_tag<T: TokenSafe>(&mut self, key: &'static str, value: &T) {
+        self.push_kw(key);
+        self.push_fmt(value);
+    }
+
+    #[inline]
+    fn push_tag_many<T: MultiTokenSafe>(&mut self, key: &'static str, value: &T) {
+        self.push_kw(key);
+        self.push_many_fmt(value);
     }
 }
 

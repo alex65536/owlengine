@@ -127,51 +127,41 @@ pub fn parse(tokens: &mut &[&Token], warn: &mut impl Sink<Error>) -> Option<Mess
 pub fn fmt(src: &Message, f: &mut impl PushTokens) {
     match src {
         Message::Id(id) => {
-            f.do_tok("id");
+            f.push_kw("id");
             match id {
-                Id::Name(name) => {
-                    f.do_tok("name");
-                    f.push_str(name);
-                }
-                Id::Author(author) => {
-                    f.do_tok("author");
-                    f.push_str(author);
-                }
+                Id::Name(name) => f.push_tag_many("name", name),
+                Id::Author(author) => f.push_tag_many("author", author),
             }
         }
-        Message::UciOk => f.do_tok("uciok"),
-        Message::ReadyOk => f.do_tok("readyok"),
+        Message::UciOk => f.push_kw("uciok"),
+        Message::ReadyOk => f.push_kw("readyok"),
         Message::BestMove { bestmove, ponder } => {
-            f.do_tok("bestmove");
-            f.do_tok(&bestmove.to_string());
+            f.push_tag("bestmove", bestmove);
             if let Some(ponder) = ponder {
-                f.do_tok("ponder");
-                f.do_tok(&ponder.to_string());
+                f.push_tag("ponder", ponder);
             }
         }
         Message::CopyProtection(status) => {
-            f.do_tok("copyprotection");
+            f.push_kw("copyprotection");
             tristatus::fmt(status, f);
         }
         Message::Registration(status) => {
-            f.do_tok("registration");
+            f.push_kw("registration");
             tristatus::fmt(status, f);
         }
         Message::Info { info, string } => {
-            f.do_tok("info");
+            f.push_kw("info");
             for inf in info {
                 info::fmt(inf, f);
             }
             if let Some(string) = string {
-                f.do_tok("string");
-                f.push_str(string);
+                f.push_tag_many("string", string);
             }
         }
         Message::Option { name, body } => {
-            f.do_tok("option");
-            f.do_tok("name");
-            f.push_str(name.as_ref());
-            f.do_tok("type");
+            f.push_kw("option");
+            f.push_tag_many("name", name);
+            f.push_kw("type");
             optbody::fmt(body, f);
         }
     }
