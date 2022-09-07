@@ -7,7 +7,7 @@ pub struct Permille(u16);
 pub enum PermilleError {
     #[error("value is less than 0")]
     TooSmall,
-    #[error("value is greater than 1")]
+    #[error("value is greater than 1000")]
     TooLarge,
 }
 

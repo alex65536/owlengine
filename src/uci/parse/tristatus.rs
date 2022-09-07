@@ -2,6 +2,7 @@ use super::super::types::TriStatus;
 use super::{prelude::*, tok};
 
 #[derive(Clone, Debug, Error, Eq, PartialEq)]
+#[non_exhaustive]
 pub enum Error {
     #[error(transparent)]
     UnexpectedEol(#[from] EolError),

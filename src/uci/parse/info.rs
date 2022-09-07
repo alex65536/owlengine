@@ -2,6 +2,7 @@ use super::super::{msg::Info, types::Permille};
 use super::{movevec, prelude::*, score, tok};
 
 #[derive(Clone, Debug, Error, Eq, PartialEq)]
+#[non_exhaustive]
 pub enum Error {
     #[error("unexpected token: {0}")]
     UnexpectedToken(String),

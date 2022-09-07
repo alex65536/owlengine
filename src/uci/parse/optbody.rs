@@ -4,6 +4,7 @@ use super::super::{msg::OptBody, str::OptComboVar};
 use super::{prelude::*, tok};
 
 #[derive(Clone, Debug, Error, Eq, PartialEq)]
+#[non_exhaustive]
 pub enum Error {
     #[error("unexpected token: {0}")]
     UnexpectedToken(String),
