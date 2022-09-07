@@ -9,13 +9,13 @@ use crate::score::BoundedRelScore;
 use super::str::{OptComboVar, OptName, RegisterName, UciString};
 use super::types::{Permille, TriStatus};
 
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub enum Register {
     Later,
     Now { name: RegisterName, code: UciString },
 }
 
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub enum GoLimits {
     Infinite,
     Clock {
@@ -33,7 +33,7 @@ pub enum GoLimits {
     },
 }
 
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub enum Command {
     Uci,
     Debug(bool),
@@ -58,13 +58,13 @@ pub enum Command {
     Quit,
 }
 
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub enum Id {
     Name(UciString),
     Author(UciString),
 }
 
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub enum Info {
     Depth(u32),
     SelDepth(u32),
@@ -84,7 +84,7 @@ pub enum Info {
     CurrLine { cpu_num: u32, moves: Vec<UciMove> },
 }
 
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub enum OptBody {
     Check(bool),
     Spin {
@@ -100,7 +100,7 @@ pub enum OptBody {
     String(UciString),
 }
 
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub enum Message {
     Id(Id),
     UciOk,

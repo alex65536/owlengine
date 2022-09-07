@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, Hash)]
+#[derive(Copy, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Debug, Hash)]
 pub struct Permille(u16);
 
 #[derive(Debug, Clone, Error, Eq, PartialEq)]
@@ -63,7 +63,7 @@ impl TryFrom<f32> for Permille {
     }
 }
 
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 pub enum TriStatus {
     Ok,
     Checking,
