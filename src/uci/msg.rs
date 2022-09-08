@@ -15,7 +15,7 @@ pub enum Register {
     Now { name: RegisterName, code: UciString },
 }
 
-#[derive(Clone, PartialEq, Eq, Hash, Debug)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug, Default)]
 pub struct Go {
     pub searchmoves: Option<Vec<UciMove>>,
     pub ponder: Option<()>,
