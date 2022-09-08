@@ -61,8 +61,8 @@ pub fn parse(tokens: &mut &[&Token], warn: &mut impl Warn<Error>) -> Option<OptB
                 .next()
                 .or_warn_with(Error::UnexpectedEol(EolError), warn)
                 .unwrap_or(&[]);
-            let default = OptComboVar::from_tokens(default)
-                .or_warn_map(Error::BadComboDefaultVar, warn)?;
+            let default =
+                OptComboVar::from_tokens(default).or_warn_map(Error::BadComboDefaultVar, warn)?;
             let vars: Vec<_> = iter
                 .enumerate()
                 .filter_map(|(pos, toks)| {

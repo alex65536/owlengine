@@ -1,4 +1,5 @@
 mod command;
+mod go;
 mod info;
 mod message;
 mod movevec;
@@ -13,10 +14,10 @@ mod prelude {
         token::{PushTokens, Token},
     };
     pub use super::{tok::PushTokensExt, EolError};
-    pub use wurm::prelude::*;
     pub use owlchess::moves::{uci, UciMove};
     pub use std::{num::ParseIntError, time::Duration};
     pub use thiserror::Error;
+    pub use wurm::prelude::*;
 }
 
 use std::error::Error;
@@ -64,6 +65,7 @@ pub trait Fmt {
 pub struct EolError;
 
 pub use command::Error as CommandError;
+pub use go::Error as GoError;
 pub use info::Error as InfoError;
 pub use message::Error as MessageError;
 pub use movevec::Error as MoveVecError;

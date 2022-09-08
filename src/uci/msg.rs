@@ -16,21 +16,19 @@ pub enum Register {
 }
 
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
-pub enum GoLimits {
-    Infinite,
-    Clock {
-        wtime: Duration,
-        btime: Duration,
-        winc: Duration,
-        binc: Duration,
-        movestogo: Option<NonZeroU64>,
-    },
-    Mate(u64),
-    Limits {
-        depth: Option<u64>,
-        nodes: Option<u64>,
-        movetime: Option<Duration>,
-    },
+pub struct Go {
+    pub searchmoves: Option<Vec<UciMove>>,
+    pub ponder: Option<()>,
+    pub infinite: Option<()>,
+    pub wtime: Option<Duration>,
+    pub btime: Option<Duration>,
+    pub winc: Option<Duration>,
+    pub binc: Option<Duration>,
+    pub movestogo: Option<NonZeroU64>,
+    pub mate: Option<u64>,
+    pub depth: Option<u64>,
+    pub nodes: Option<u32>,
+    pub movetime: Option<Duration>,
 }
 
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
@@ -48,11 +46,7 @@ pub enum Command {
         startpos: RawBoard,
         moves: Vec<UciMove>,
     },
-    Go {
-        searchmoves: Option<Vec<UciMove>>,
-        ponder: Option<()>,
-        limits: GoLimits,
-    },
+    Go(Go),
     Stop,
     PonderHit,
     Quit,

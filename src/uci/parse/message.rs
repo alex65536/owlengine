@@ -109,8 +109,7 @@ pub fn parse(tokens: &mut &[&Token], warn: &mut impl Warn<Error>) -> Option<Mess
                 tok::expect(tokens, "name", Error::OptionNoName, warn)?;
                 let (name, mut body) = tok::split(tokens, "type", Error::OptionNoType, warn);
                 *tokens = &[];
-                let name = OptName::from_tokens(name)
-                    .or_warn_map(Error::OptionBadName, warn)?;
+                let name = OptName::from_tokens(name).or_warn_map(Error::OptionBadName, warn)?;
                 let body = optbody::parse(&mut body, &mut warn.adapt())?;
                 return Some(Message::Option { name, body });
             }

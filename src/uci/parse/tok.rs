@@ -54,9 +54,7 @@ where
     F: FnOnce(D) -> E,
     T: FromStr<Err = D>,
 {
-    next_warn(tokens, warn)?
-        .parse()
-        .or_warn_map(func, warn)
+    next_warn(tokens, warn)?.parse().or_warn_map(func, warn)
 }
 
 pub fn expect<E: From<EolError> + Error>(
