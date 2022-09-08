@@ -75,7 +75,13 @@ pub fn parse(tokens: &mut &[&Token], warn: &mut impl Warn<Error>) -> Option<OptB
         "button" => Some(OptBody::Button),
         "string" => {
             tok::expect(tokens, "default", Error::ExpectedToken("default"), warn)?;
-            Some(OptBody::String(UciString::from_tokens(mem::take(tokens))))
+            let value = UciString::from_tokens(mem::take(tokens));
+            let value = if value.as_str() == "<empty>" {
+                UciString::new()
+            } else {
+                value
+            };
+            Some(OptBody::String(value))
         }
         tok => {
             warn.warn(Error::UnknownType(tok.to_string()));
@@ -108,7 +114,12 @@ pub fn fmt(src: &OptBody, f: &mut impl PushTokens) {
         OptBody::Button => f.push_kw("button"),
         OptBody::String(str) => {
             f.push_kw("string");
-            f.push_tag_many("default", str);
+            f.push_kw("default");
+            if str.is_empty() {
+                f.push_kw("<empty>");
+            } else {
+                f.push_many_fmt(str);
+            }
         }
     }
 }
