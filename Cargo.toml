@@ -9,3 +9,5 @@ edition = "2021"
 owlchess = "0.3.2"
 thiserror = "1.0.32"
 wurm = "1.1.0"
+tokio = { version = "1.21.0", features = ["rt", "rt-multi-thread", "sync", "process"] }
+async-trait = "0.1.57"
